@@ -14,6 +14,13 @@ class Paper(models.Model):
     # When print pr see it in Django admin
     def __str__(self):
         return f"({self.id}) {self.title} ({self.year})"
+    
+class SkillEmbedding(models.Model):
+    skill_name = models.CharField(max_length=255, unique=True)
+    embedding = models.BinaryField()  # เก็บ np array เป็น bytes
+    source = models.CharField(max_length=100, default="ESCO")
+    model_name = models.CharField(max_length=100, default="allenai/specter2_base")
+    created_at = models.DateTimeField(auto_now_add=True)
 
 class ExtractedSkill(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='extracted_skills')
