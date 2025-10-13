@@ -21,6 +21,9 @@ class SkillEmbedding(models.Model):
     source = models.CharField(max_length=100, default="ESCO")
     model_name = models.CharField(max_length=100, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.skill_name[:40]}..."
 
 class ExtractedSkill(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='extracted_skills')
