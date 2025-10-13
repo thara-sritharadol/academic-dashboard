@@ -17,13 +17,14 @@ class Command(BaseCommand):
         parser.add_argument(
             "--model", 
             type=str, 
-            default="all-MiniLM-L6-v2", 
+            #default="all-MiniLM-L6-v2", 
+            default="allenai/specter2_base",
             help="Name of the SentenceTransformer model to use."
         )
         parser.add_argument(
             "--top-k", 
             type=int, 
-            default=5, 
+            default=20, 
             help="Number of top skills to extract for each paper."
         )
         parser.add_argument(
@@ -32,12 +33,12 @@ class Command(BaseCommand):
             help="Filter papers by a specific author name (case-insensitive contains)."
         )
         parser.add_argument(
-            "--start-year", 
+            "--start", 
             type=int, 
             help="Filter papers published from this year."
         )
         parser.add_argument(
-            "--end-year", 
+            "--end", 
             type=int, 
             help="Filter papers published up to this year."
         )

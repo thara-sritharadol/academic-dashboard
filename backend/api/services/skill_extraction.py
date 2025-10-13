@@ -42,13 +42,27 @@ class SkillExtractor:
         print(f"Generate embedding for {len(skill_list)} skills...")
         self.skill_embeddings = self.model.encode(skill_list, convert_to_tensor=True)
         print("Skill embedding ready.")
-        
+    
     def extract_from_text(self, paper, author_name = None, top_k = 5, save_to_db=True):
         if not paper.abstract:
             return []
         
+        """
+        
         text_emb = self.model.encode(paper.abstract, convert_to_tensor=True)
         cos_scores = util.cos_sim(text_emb, self.skill_embeddings)[0]
+        
+        """
+        title = paper.title or ""
+        abstract = paper.abstract or ""
+        
+        text_to_encode = title + self.model.tokenizer.sep_token + abstract
+        
+        text_emb = self.model.encode(text_to_encode, convert_to_tensor=True)
+        
+        cos_scores = util.cos_sim(text_emb, self.skill_embeddings)[0]
+        
+        
         top_results = np.argpartition(-cos_scores, range(top_k))[:top_k]
         
         extracted = []
@@ -72,3 +86,4 @@ class SkillExtractor:
                     embedding_model=self.model_name
                 )
         return sorted(extracted, key=lambda x: x["confidence"], reverse=True)
+    
