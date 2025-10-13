@@ -19,7 +19,7 @@ class SkillEmbedding(models.Model):
     skill_name = models.CharField(max_length=255, unique=True)
     embedding = models.BinaryField()  # เก็บ np array เป็น bytes
     source = models.CharField(max_length=100, default="ESCO")
-    model_name = models.CharField(max_length=100, default="allenai/specter2_base")
+    model_name = models.CharField(max_length=100, default="all-mpnet-base-v2")
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):

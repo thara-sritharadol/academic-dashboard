@@ -1,36 +1,29 @@
 import time
 from django.core.management.base import BaseCommand
 from tqdm import tqdm
-from api.models import Paper, ExtractedSkill
-from api.services.skill_extraction import load_skill, SkillExtractor
+from api.models import Paper
+from api.services.skill_extraction import SkillExtractor
 
 class Command(BaseCommand):
-    help = "Extract skills from paper abstracts using a predefined skill list and save them to the DB."
+    help = "Extract skills from paper abstracts using skills stored in DB (with optional sentence splitting)."
 
     def add_arguments(self, parser):
-
-        parser.add_argument(
-            "skills_file", 
-            type=str, 
-            help="Path to the skill dataset file (CSV or JSON)."
-        )
         parser.add_argument(
             "--model", 
             type=str, 
-            #default="all-MiniLM-L6-v2", 
-            default="allenai/specter2_base",
-            help="Name of the SentenceTransformer model to use."
+            default="all-mpnet-base-v2",
+            help="SentenceTransformer model name (must match SkillEmbedding in DB)."
         )
         parser.add_argument(
             "--top-k", 
             type=int, 
-            default=20, 
+            default=10, 
             help="Number of top skills to extract for each paper."
         )
         parser.add_argument(
             "--author", 
             type=str, 
-            help="Filter papers by a specific author name (case-insensitive contains)."
+            help="Filter papers by author name (case-insensitive contains)."
         )
         parser.add_argument(
             "--start", 
@@ -45,73 +38,82 @@ class Command(BaseCommand):
         parser.add_argument(
             "--overwrite",
             action="store_true",
-            help="Re-process papers that already have extracted skills.",
+            help="Re-process papers already extracted by this model."
+        )
+        parser.add_argument(
+            "--split",
+            action="store_true",
+            help="Enable sentence/paragraph splitting before embedding (improves confidence)."
         )
 
     def handle(self, *args, **options):
-
-        skills_file = options["skills_file"]
         model_name = options["model"]
         top_k = options["top_k"]
         author_filter = options.get("author")
-        start_year = options.get("start_year")
-        end_year = options.get("end_year")
+        start_year = options.get("start")
+        end_year = options.get("end")
         overwrite = options["overwrite"]
+        use_split = options["split"]
 
-        # Load Skill List
-        self.stdout.write(self.style.NOTICE(f"Loading skills from '{skills_file}'..."))
-        try:
-            skill_list = load_skill(skills_file)
-        except (FileNotFoundError, ValueError) as e:
-            self.stdout.write(self.style.ERROR(f"Error loading skills file: {e}"))
-            return
-        
-        # Create SkillExtractor
-        self.stdout.write(self.style.NOTICE(f"Initializing model '{model_name}' and creating embeddings..."))
+        # ✅ แสดงสถานะเริ่มต้น
+        self.stdout.write(self.style.NOTICE(
+            f"Loading skills from DB (model={model_name})..."
+        ))
+        if use_split:
+            self.stdout.write(self.style.WARNING("Sentence splitting: ENABLED"))
+        else:
+            self.stdout.write(self.style.SUCCESS("Sentence splitting: DISABLED"))
+
+        # ✅ สร้าง SkillExtractor
         start_time = time.time()
-        extractor = SkillExtractor(skill_list=skill_list, model_name=model_name)
+        extractor = SkillExtractor(
+            model_name=model_name,
+            use_db=True,
+            use_sentence_split=use_split,  # <<-- ใช้ flag ที่เพิ่มเข้ามา
+        )
         end_time = time.time()
-        self.stdout.write(f"Initialization took {end_time - start_time:.2f} seconds.")
+        self.stdout.write(f"Initialization took {end_time - start_time:.2f} seconds.\n")
 
-        # Fetch Papers from DB ---
+        # ✅ ดึง papers จากฐานข้อมูล
         self.stdout.write(self.style.NOTICE("Querying papers from the database..."))
-        papers = Paper.objects.filter(abstract__isnull=False).exclude(abstract__exact='')
+        papers = Paper.objects.filter(abstract__isnull=False).exclude(abstract__exact="")
 
-        # filter
         if author_filter:
             papers = papers.filter(authors__icontains=author_filter)
             self.stdout.write(f"   - Filtering by author: {author_filter}")
         if start_year:
             papers = papers.filter(year__gte=start_year)
-            self.stdout.write(f"   - Filtering from year: {start_year}")
+            self.stdout.write(f"   - From year: {start_year}")
         if end_year:
             papers = papers.filter(year__lte=end_year)
-            self.stdout.write(f"   - Filtering up to year: {end_year}")
-            
-        # if not overwrite, skip paper
+            self.stdout.write(f"   - Up to year: {end_year}")
+
         if not overwrite:
             papers = papers.exclude(extracted_skills__embedding_model=model_name)
-            self.stdout.write(self.style.WARNING("   - Skipping papers already processed by this model. Use --overwrite to re-process."))
+            self.stdout.write(self.style.WARNING(
+                "   - Skipping papers already processed by this model. Use --overwrite to re-process."
+            ))
 
         total_papers = papers.count()
         if total_papers == 0:
-            self.stdout.write(self.style.WARNING("No papers found matching the criteria to process."))
+            self.stdout.write(self.style.WARNING("No papers found matching the criteria."))
             return
 
-        self.stdout.write(self.style.SUCCESS(f"📚 Found {total_papers} papers to process."))
+        self.stdout.write(self.style.SUCCESS(f"📚 Found {total_papers} papers to process.\n"))
 
-        # process and save
+        # ✅ เริ่มการประมวลผล
         processed_count = 0
         with tqdm(total=total_papers, desc="Extracting Skills", unit="paper", dynamic_ncols=True) as pbar:
-            # .iterator() for  memory save
             for paper in papers.iterator():
                 extractor.extract_from_text(
                     paper=paper,
-                    author_name=author_filter, # save author from filter
+                    author_name=author_filter,
                     top_k=top_k,
-                    save_to_db=True
+                    save_to_db=True,
                 )
                 processed_count += 1
                 pbar.update(1)
 
-        self.stdout.write(self.style.SUCCESS(f"\nSuccessfully processed {processed_count} papers and saved skills to the database."))
+        self.stdout.write(self.style.SUCCESS(
+            f"\n✅ Successfully processed {processed_count} papers and saved extracted skills."
+        ))
