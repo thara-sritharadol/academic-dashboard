@@ -31,7 +31,7 @@ class ExtractedSkill(models.Model):
     skill_name = models.CharField(max_length=255)
     skill_uri = models.URLField(null=True, blank=True)
     confidence = models.FloatField(default=0.0)  #similarity between abstract and skill
-    embedding_model = models.CharField(max_length=255, default="SBERT-all-mpnet-base-v2")
+    embedding_model = models.CharField(max_length=255, default="all-mpnet-base-v2")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

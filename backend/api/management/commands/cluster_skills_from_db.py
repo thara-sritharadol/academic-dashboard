@@ -8,7 +8,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--model",
             type=str,
-            default="all-mpnet-base-v2",
+            default="allenai/specter2",
             help="Name of the SentenceTransformer model used for skill embeddings."
         )
         parser.add_argument(
