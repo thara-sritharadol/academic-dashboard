@@ -36,3 +36,27 @@ class ExtractedSkill(models.Model):
 
     def __str__(self):
         return f"{self.skill_name} ({self.confidence:.2f}) - {self.author_name or 'Unknown'} [{self.paper.title}]"
+    
+class TopicEmbedding(models.Model):
+    topic_name = models.CharField(max_length=255, unique=True)
+    embedding = models.BinaryField()
+    source = models.CharField(max_length=100, default="MANUAL") # แหล่งที่มาของ Topic เช่น MANUAL, ACM, etc.
+    model_name = models.CharField(max_length=100, default="all-mpnet-base-v2")
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.topic_name} ({self.source})"
+    
+class ClassifiedTopic(models.Model):
+    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')
+    topic_name = models.CharField(max_length=255)
+    confidence = models.FloatField(default=0.0)
+    embedding_model = models.CharField(max_length=255, default="all-mpnet-base-v2")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # ป้องกันการบันทึก topic เดียวกันซ้ำสำหรับ paper และ model เดียวกัน
+        unique_together = ('paper', 'topic_name', 'embedding_model')
+
+    def __str__(self):
+        return f"{self.topic_name} ({self.confidence:.2f}) - [{self.paper.title}]"
