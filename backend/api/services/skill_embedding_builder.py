@@ -8,14 +8,9 @@ from api.models import SkillEmbedding
 def build_and_save_skill_embeddings_from_description(
         csv_path,
         model_name="all-mpnet-base-v2",
-        source="ESCO",
+        source="AUTO",
         limit=None
     ):
-    """
-    🔹 สร้าง Skill Embedding จาก ESCO โดยใช้เฉพาะ description
-    🔹 ใช้ preferredLabel และ altLabels เป็น metadata (alias)
-    🔹 เหมาะสำหรับการ match กับ Abstract ของ Academic Paper
-    """
 
     # -------------------------------
     # 1. ตรวจสอบไฟล์

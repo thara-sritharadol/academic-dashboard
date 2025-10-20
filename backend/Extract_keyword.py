@@ -4,7 +4,7 @@ from keybert import KeyBERT
 
 # ตัวอย่าง abstract
 abstract = """
-Large-scale distributed systems have become an essential part of our everyday life. These systems have a large number of hardware and software components, often cooperating in complex and unpredictable ways. Operating these kinds of systems requires centralized monitoring to understand their overall states. While running software to collect metrics in a server is considered common nowadays, it often goes unstudied the impact metric collection software have on the base system. This is especially important in low-power, IoT applications. According to our review, one particular software, Telegraf, has never been formally studied before in terms of how much overhead Telegraf adds to the base system. In this work, we conducted several experiments to study how the base system is affected by Telegraf in two scenarios: a datacenter server and an IoT node. The results show that Telegraf is lightweight and suitable to serve as a real-time monitoring agent in both scenarios.
+In an effort to bolster the healthcare system in Thailand, particularly in remote areas with limited access to pharmacists, this study proposes a novel drug recommendation system based on drug details. This system aims to address the challenge of medication selection in resource-constrained settings by providing physicians with informed recommendations tailored to patient needs.The proposed system utilizes drug data sourced from 1mg.com, encompassing approximately 34,284 drug entries. To ensure high-quality recommendations, the data undergoes a rigorous preprocessing phase involving null value imputation and feature extraction using techniques like TF-IDF. Following preprocessing, a combination of Drug Recommendation with cosine similarity and the Bee Algorithm is employed. Cosine similarity establishes a baseline for drug similarity, while the Bee Algorithm optimizes the selection process by considering additional factors beyond just similarity, such as potential side effects and cost-effectiveness.
 """
 
 # ----------------------------
@@ -19,7 +19,7 @@ print(rake_keywords)
 # ----------------------------
 # วิธีที่ 2: ใช้ KeyBERT (BERT-based)
 # ----------------------------
-kw_model = KeyBERT(model="all-mpnet-base-v2")  # ใช้โมเดล lightweight
+kw_model = KeyBERT(model="all-MiniLM-L6-v2")  # ใช้โมเดล lightweight
 keybert_keywords = kw_model.extract_keywords(abstract, top_n=10, stop_words='english')
 print("\nKeyBERT Keywords:")
 print([kw for kw, score in keybert_keywords])
