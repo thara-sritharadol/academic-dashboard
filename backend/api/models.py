@@ -47,16 +47,34 @@ class TopicEmbedding(models.Model):
     def __str__(self):
         return f"{self.topic_name} ({self.source})"
     
+# ... (Paper model) ...
+
+# (SkillEmbedding, ExtractedSkill models...)
+
+# ... (TopicEmbedding model) ...
+    
 class ClassifiedTopic(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')
     topic_name = models.CharField(max_length=255)
-    confidence = models.FloatField(default=0.0)
+
+    vote_count = models.IntegerField(default=0) 
+    level = models.IntegerField(null=True, blank=True)
     embedding_model = models.CharField(max_length=255, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        # ป้องกันการบันทึก topic เดียวกันซ้ำสำหรับ paper และ model เดียวกัน
         unique_together = ('paper', 'topic_name', 'embedding_model')
 
     def __str__(self):
-        return f"{self.topic_name} ({self.confidence:.2f}) - [{self.paper.title}]"
+        return f"[L{self.level or '?'}] {self.topic_name} ({self.vote_count} votes) - [{self.paper.title}]"
+    
+class ClassifiedSubTopic(models.Model):
+    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_sub_topics')
+    topic_name = models.CharField(max_length=255)
+    confidence = models.FloatField(default=0.0)
+    source_sentence = models.TextField(null=True, blank=True) 
+    embedding_model = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.topic_name} ({self.confidence:.2f})"
