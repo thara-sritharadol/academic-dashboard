@@ -19,7 +19,7 @@ class SkillEmbedding(models.Model):
     skill_name = models.CharField(max_length=255, unique=True)
     embedding = models.BinaryField()  # เก็บ np array เป็น bytes
     source = models.CharField(max_length=100, default="ESCO")
-    model_name = models.CharField(max_length=100, default="all-mpnet-base-v2")
+    model_name = models.CharField(max_length=100, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -31,7 +31,7 @@ class ExtractedSkill(models.Model):
     skill_name = models.CharField(max_length=255)
     skill_uri = models.URLField(null=True, blank=True)
     confidence = models.FloatField(default=0.0)  #similarity between abstract and skill
-    embedding_model = models.CharField(max_length=255, default="all-mpnet-base-v2")
+    embedding_model = models.CharField(max_length=255, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -41,7 +41,7 @@ class TopicEmbedding(models.Model):
     topic_name = models.CharField(max_length=255, unique=True)
     embedding = models.BinaryField()
     source = models.CharField(max_length=100, default="MANUAL") # แหล่งที่มาของ Topic เช่น MANUAL, ACM, etc.
-    model_name = models.CharField(max_length=100, default="all-mpnet-base-v2")
+    model_name = models.CharField(max_length=100, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
@@ -51,7 +51,7 @@ class ClassifiedTopic(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')
     topic_name = models.CharField(max_length=255)
     confidence = models.FloatField(default=0.0)
-    embedding_model = models.CharField(max_length=255, default="all-mpnet-base-v2")
+    embedding_model = models.CharField(max_length=255, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

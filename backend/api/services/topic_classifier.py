@@ -1,7 +1,7 @@
 import numpy as np
 from sentence_transformers import SentenceTransformer, util
 # ## NEW ##: Import Model ใหม่ และเปลี่ยนชื่อ ExtractedSkill เป็น ClassifiedTopic หรืออื่นๆ
-from api.models import ClassifiedTopic, TopicEmbedding
+from api.models import ClassifiedTopic, TopicEmbedding, Paper
 from nltk import sent_tokenize
 
 # ## CHANGED ##: เปลี่ยนชื่อฟังก์ชันและ Model

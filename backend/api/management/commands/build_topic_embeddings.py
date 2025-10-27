@@ -1,5 +1,4 @@
 from django.core.management.base import BaseCommand
-# ## CHANGED ##: Import the new topic embedding builder function
 from api.services.topic_embedding_builder import build_and_save_topic_embeddings
 
 class Command(BaseCommand):
@@ -10,7 +9,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--model", 
             type=str, 
-            default="all-mpnet-base-v2", 
+            # ## CHANGED ##: เปลี่ยนค่า default ให้ตรงกับ Colab และ service
+            default="allenai/specter2_base", 
             help="Name of the SentenceTransformer model to use"
         )
         parser.add_argument(
@@ -33,7 +33,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.NOTICE(f"🚀 Starting to build topic embeddings from {csv_path}"))
         
-        # ## CHANGED ##: Call the topic builder function
         num_records = build_and_save_topic_embeddings(
             csv_path, 
             model_name=model_name, 
