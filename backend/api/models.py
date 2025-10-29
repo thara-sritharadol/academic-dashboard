@@ -38,20 +38,17 @@ class ExtractedSkill(models.Model):
         return f"{self.skill_name} ({self.confidence:.2f}) - {self.author_name or 'Unknown'} [{self.paper.title}]"
     
 class TopicEmbedding(models.Model):
-    topic_name = models.CharField(max_length=255, unique=True)
+    topic_name = models.CharField(max_length=255) 
     embedding = models.BinaryField()
-    source = models.CharField(max_length=100, default="MANUAL") # แหล่งที่มาของ Topic เช่น MANUAL, ACM, etc.
+    source = models.CharField(max_length=100, default="MANUAL")
     model_name = models.CharField(max_length=100, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
     
+    class Meta:
+        unique_together = ('topic_name', 'source', 'model_name')
+
     def __str__(self):
-        return f"{self.topic_name} ({self.source})"
-    
-# ... (Paper model) ...
-
-# (SkillEmbedding, ExtractedSkill models...)
-
-# ... (TopicEmbedding model) ...
+        return f"[{self.source}] {self.topic_name} ({self.model_name})"
     
 class ClassifiedTopic(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')

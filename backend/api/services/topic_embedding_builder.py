@@ -82,6 +82,6 @@ def build_and_save_topic_embeddings(
         ))
 
     TopicEmbedding.objects.bulk_create(objs, ignore_conflicts=True, batch_size=500)
-    print(f"🎉 บันทึกสำเร็จ {len(objs):,} records ลง SkillEmbedding")
+    print(f"🎉 บันทึกสำเร็จ {len(objs):,} records ลง TopicEmbedding")
 
     return len(objs)
