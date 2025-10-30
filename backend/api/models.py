@@ -53,9 +53,14 @@ class TopicEmbedding(models.Model):
 class ClassifiedTopic(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')
     topic_name = models.CharField(max_length=255)
-
     vote_count = models.IntegerField(default=0) 
     level = models.IntegerField(null=True, blank=True)
+    level_0_topic = models.CharField(
+        max_length=255, 
+        null=True, 
+        blank=True, 
+        db_index=True # เราจะใช้ฟิลด์นี้ค้นหาบ่อย
+    )
     embedding_model = models.CharField(max_length=255, default="allenai/specter2_base")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -63,7 +68,9 @@ class ClassifiedTopic(models.Model):
         unique_together = ('paper', 'topic_name', 'embedding_model')
 
     def __str__(self):
-        return f"[L{self.level or '?'}] {self.topic_name} ({self.vote_count} votes) - [{self.paper.title}]"
+        # อัปเดต str representation
+        l0_str = f" (L0: {self.level_0_topic})" if self.level_0_topic else ""
+        return f"[L{self.level or '?'}] {self.topic_name}{l0_str} ({self.vote_count} votes)"
     
 class ClassifiedSubTopic(models.Model):
     paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_sub_topics')
