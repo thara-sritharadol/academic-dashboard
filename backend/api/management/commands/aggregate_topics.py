@@ -141,6 +141,15 @@ class Command(BaseCommand):
                         k=options["allowed_list_k"]
                     )
                     
+                    # --- ## NEW DEBUG OUTPUT ## ---
+                    # `options['verbosity']` จะถูกส่งมาจาก Django (ปกติคือ 1)
+                    # ถ้าเรารันด้วย `-v 2` โค้ดส่วนนี้จะทำงาน
+                    if options['verbosity'] > 1:
+                        # ใช้ pbar.write() เพื่อพิมพ์ข้อความเหนือ progress bar
+                        pbar.write(f"\n--- Paper: {paper.id} ({paper.title[:50]}...) ---")
+                        pbar.write(f"   [Pass 1 Allowed List] (Top {options['allowed_list_k']}): {', '.join(allowed_list) or 'None'}")
+                    # --- ## END NEW DEBUG OUTPUT ## ---
+                    
                     # (Pass 2) ดึงหลักฐาน
                     sub_topics = ClassifiedSubTopic.objects.filter(
                         paper=paper,

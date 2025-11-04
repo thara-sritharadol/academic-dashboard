@@ -9,7 +9,6 @@ class Command(BaseCommand):
         parser.add_argument(
             "--model", 
             type=str, 
-            # ## CHANGED ##: เปลี่ยนค่า default ให้ตรงกับ Colab และ service
             default="allenai/specter2_base", 
             help="Name of the SentenceTransformer model to use"
         )
