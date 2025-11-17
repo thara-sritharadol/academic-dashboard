@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Paper, TopicEmbedding, ClassifiedTopic, ClassifiedSubTopic
+from .models import Paper, SkillEmbedding, ExtractedSkill, ExtractedSubSkill
 
 admin.site.register(Paper)
-admin.site.register(TopicEmbedding)
-admin.site.register(ClassifiedTopic)
-admin.site.register(ClassifiedSubTopic)
+admin.site.register(SkillEmbedding)
+admin.site.register(ExtractedSkill)
+admin.site.register(ExtractedSubSkill)

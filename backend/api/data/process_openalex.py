@@ -84,7 +84,7 @@ if __name__ == '__main__':
     
     # --- ## ⚙️ CHANGED SETTINGS ## ---
     # ตั้งค่าให้กรองเฉพาะ Level 0 และ 1
-    MAX_LEVEL_TO_INCLUDE = 1 
+    MAX_LEVEL_TO_INCLUDE = 0 
     
     # ตั้งชื่อไฟล์ Output ให้อัตโนมัติ
     OUTPUT_FILE = f'fos_topics_L0-L{MAX_LEVEL_TO_INCLUDE}.csv'

@@ -15,48 +15,47 @@ class Paper(models.Model):
     def __str__(self):
         return f"({self.id}) {self.title} ({self.year})"
     
-class TopicEmbedding(models.Model):
-    topic_name = models.CharField(max_length=255) 
+class SkillEmbedding(models.Model):
+    skill_name = models.CharField(max_length=255) 
     embedding = models.BinaryField()
     source = models.CharField(max_length=100, default="MANUAL")
-    model_name = models.CharField(max_length=100, default="allenai/specter2_base")
+    model_name = models.CharField(max_length=100, default="all-mpnet-base-v2")
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        unique_together = ('topic_name', 'source', 'model_name')
+        unique_together = ('skill_name', 'source', 'model_name')
 
     def __str__(self):
-        return f"[{self.source}] {self.topic_name} ({self.model_name})"
+        return f"[{self.source}] {self.skill_name} ({self.model_name})"
     
-class ClassifiedTopic(models.Model):
-    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_topics')
-    topic_name = models.CharField(max_length=255)
+class ExtractedSkill(models.Model):
+    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_skills')
+    skill_name = models.CharField(max_length=255)
     vote_count = models.IntegerField(default=0) 
     level = models.IntegerField(null=True, blank=True)
-    level_0_topic = models.CharField(
+    level_0_skill = models.CharField(
         max_length=255, 
         null=True, 
         blank=True, 
-        db_index=True # เราจะใช้ฟิลด์นี้ค้นหาบ่อย
+        db_index=True
     )
-    embedding_model = models.CharField(max_length=255, default="allenai/specter2_base")
+    embedding_model = models.CharField(max_length=255, default="all-mpnet-base-v2")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('paper', 'topic_name', 'embedding_model')
+        unique_together = ('paper', 'skill_name', 'embedding_model')
 
     def __str__(self):
-        # อัปเดต str representation
-        l0_str = f" (L0: {self.level_0_topic})" if self.level_0_topic else ""
-        return f"[L{self.level or '?'}] {self.topic_name}{l0_str} ({self.vote_count} votes)"
+        l0_str = f" (L0: {self.level_0_skill})" if self.level_0_skill else ""
+        return f"[L{self.level or '?'}] {self.skill_name}{l0_str} ({self.vote_count} votes) ({self.paper.authors})"
     
-class ClassifiedSubTopic(models.Model):
-    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_sub_topics')
-    topic_name = models.CharField(max_length=255)
+class ExtractedSubSkill(models.Model):
+    paper = models.ForeignKey('Paper', on_delete=models.CASCADE, related_name='classified_sub_skillss')
+    skill_name = models.CharField(max_length=255)
     confidence = models.FloatField(default=0.0)
     source_sentence = models.TextField(null=True, blank=True) 
     embedding_model = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.topic_name} ({self.confidence:.2f})"
+        return f"{self.skill_name} ({self.confidence:.2f}) ({self.paper.title})"

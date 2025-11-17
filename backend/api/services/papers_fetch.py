@@ -1,11 +1,10 @@
 import requests
 import time
-from api.models import Paper
 
 def _enrich_with_semantic_scholar(doi: str) -> dict:
-    """
-    Fetches additional paper details from Semantic Scholar using a DOI.
-    """
+    
+    #Fetches additional paper details from Semantic Scholar using a DOI.
+
     if not doi:
         return {}
 
@@ -22,7 +21,7 @@ def _enrich_with_semantic_scholar(doi: str) -> dict:
                 "citation_count": s2_data.get("citationCount", 0),
             }
     except requests.RequestException:
-        # Handle cases where the API is down or there's a network issue
+        #Handle cases where the API is down or there's a network issue
         pass
         
     return {}
@@ -37,7 +36,7 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
     offset = 0
     target_author = author.lower().strip() if author else None
 
-    # --- Setup Query Parameters ---
+    #Setup Query Parameters
     base_params = {"rows": rows_per_page}
     if start_year and end_year:
         base_params["filter"] = f"from-pub-date:{start_year},until-pub-date:{end_year}"
@@ -46,16 +45,16 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
     if query:
         base_params["query"] = query
     
-    # --- First API call to get total results ---
+    #First API call to get total results
     try:
         first_resp = requests.get(url, params={**base_params, "offset": 0}, timeout=10)
         if first_resp.status_code != 200:
-            # If the first call fails, we can't proceed.
-            yield 0 # Yield 0 to indicate no results
+            #If the first call fails, we can't proceed.
+            yield 0 #Yield 0 to indicate no results
             return
         
         total_results = first_resp.json().get("message", {}).get("total-results", 0)
-        yield total_results # First, yield the total count for the progress bar
+        yield total_results #First, yield the total count for the progress bar
         
         if total_results == 0:
             return
@@ -66,7 +65,7 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
 
     time.sleep(1)
 
-    # --- Main Pagination Loop ---
+    #Main Pagination Loop
     while offset < total_results:
         params = base_params.copy()
         params["offset"] = offset
@@ -74,16 +73,16 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
         try:
             response = requests.get(url, params=params, timeout=10)
             if response.status_code != 200:
-                break # Exit loop on subsequent errors
+                break #Exit loop on subsequent errors
             
             items = response.json().get("message", {}).get("items", [])
             if not items:
-                break # No more items, exit
+                break #No more items, exit
         except requests.RequestException:
             break
 
         for item in items:
-            # --- Author Matching Logic ---
+            #Author Matching Logic
             item_authors = item.get("author", [])
             if target_author:
                 match_found = any(
@@ -91,9 +90,9 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
                     for a in item_authors
                 )
                 if not match_found:
-                    continue # Skip this paper if no author matches
+                    continue #Skip this paper if no author matches
 
-            # --- Parse CrossRef Data ---
+            #Parse CrossRef Data
             doi = item.get("DOI")
             title = " ".join(item.get("title", [])) or "(No Title)"
             
@@ -114,7 +113,7 @@ def stream_papers_from_apis(author: str = None, query: str = None, start_year: i
                 "url": item.get("URL"),
             }
 
-            # --- Enrich with Semantic Scholar ---
+            #Enrich with Semantic Scholar
             enriched_data = _enrich_with_semantic_scholar(doi)
             paper_data.update(enriched_data)
 
