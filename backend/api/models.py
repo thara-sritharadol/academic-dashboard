@@ -1,8 +1,20 @@
 from django.db import models
 
+class Author(models.Model):
+    openalex_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    name = models.CharField(max_length=255)
+    institution = models.CharField(max_length=255, null=True, blank=True)
+    primary_cluster = models.CharField(max_length=255, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
 class Paper(models.Model):
     title = models.TextField()
-    authors = models.TextField()
+    authors_text = models.TextField(null=True, blank=True) 
+    
+    authors = models.ManyToManyField(Author, related_name="papers")
+    
     year = models.IntegerField(null=True, blank=True)
     doi = models.CharField(max_length=255, unique=True)
     venue = models.CharField(max_length=255, null=True, blank=True)
@@ -10,10 +22,12 @@ class Paper(models.Model):
     fields_of_study = models.TextField(null=True, blank=True)
     citation_count = models.IntegerField(default=0)
     url = models.URLField(null=True, blank=True)
-    
-    # When print pr see it in Django admin
+
+    cluster_id = models.IntegerField(null=True, blank=True, db_index=True) # เก็บเลขกลุ่ม เช่น 0, 1, 2
+    cluster_label = models.CharField(max_length=255, null=True, blank=True)
+
     def __str__(self):
-        return f"({self.id}) {self.title} ({self.year})"
+        return f"({self.id}) {self.title}"
     
 class SkillEmbedding(models.Model):
     skill_name = models.CharField(max_length=255) 

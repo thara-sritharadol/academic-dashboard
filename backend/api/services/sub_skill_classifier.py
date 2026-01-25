@@ -4,6 +4,7 @@ from sentence_transformers import SentenceTransformer, util
 from nltk.tokenize import sent_tokenize
 import nltk
 
+
 from api.models import Paper, SkillEmbedding, ExtractedSubSkill
 
 class SubSkillClassifier:
@@ -12,6 +13,7 @@ class SubSkillClassifier:
         self.stdout = lambda x: print(x)
         self.stdout(f"NLTK: Loading 'punkt' tokenizer...")
         nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab')
         
         self.stdout(f"Loading Model '{model_name}' ...")
         self.model = SentenceTransformer(model_name)

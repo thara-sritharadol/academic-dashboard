@@ -52,17 +52,7 @@ class SkillAggregator:
         self.stdout(f"Load L0-L1 successfully {len(skill_list):,} skills.")
         return skill_list, skill_embeddings_tensor
 
-    # ... (imports)
-
-    # ... (class init) ...
-
-    # --- ## UPDATED METHOD ## ---
     def get_allowed_list(self, text: str, relative_threshold=0.85, min_absolute=0.30, min_k=5):
-        """
-        Pass 1: Adaptive Thresholding with Safety Net
-        1. พยายามกรองด้วย Threshold ก่อน (เพื่อคุณภาพ)
-        2. ถ้าผลลัพธ์น้อยกว่า min_k, ให้บังคับเอา Top-k (เพื่อปริมาณขั้นต่ำ)
-        """
         if not text:
             return set()
             
@@ -78,7 +68,6 @@ class SkillAggregator:
         # 3. เลือก Indices ที่ผ่านเกณฑ์
         indices = torch.where(cos_scores >= threshold)[0]
         
-        # --- 🛡️ SAFETY NET (ตาข่ายนิรภัย) ---
         # ถ้าจำนวนที่ผ่านเกณฑ์ น้อยกว่า min_k (เช่น น้อยกว่า 5 อัน)
         # ให้บังคับเอา Top-5 แทน เพื่อป้องกัน Allowed List ว่างเปล่า
         if len(indices) < min_k:
@@ -86,7 +75,7 @@ class SkillAggregator:
             top_results = torch.topk(cos_scores, k=min_k)
             indices = top_results.indices
             
-        # แปลงเป็น numpy array เพื่อวนลูป
+        #แปลงเป็น numpy array เพื่อวนลูป
         indices = indices.cpu().numpy()
         
         allowed_list = set()
@@ -101,10 +90,6 @@ class SkillAggregator:
                            max_ancestor_level=2, 
                            min_vote_count=2,
                            min_level_to_save=1):
-        """
-        (Pass 2: Bottom-Up + Gating)
-        นับคะแนนโหวตจาก Sub-skills และกรองด้วย 'Allowed List' (ตรรกะใหม่)
-        """
         
         gate_list = set(allowed_list)
         
