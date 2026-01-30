@@ -44,7 +44,9 @@ class NetworkGraphView(APIView):
                 "id": author.id,
                 "name": author.name,
                 "val": author.works_count,
-                "group": author.primary_cluster or "Uncategorized"
+                "group": author.primary_cluster or "Uncategorized",
+                "faculty": author.faculty or "",
+                "dept": author.department or ""
             })
 
         # 3. ดึง Papers

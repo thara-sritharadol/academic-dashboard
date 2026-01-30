@@ -86,6 +86,7 @@ const StatsZone = () => {
 
 const styles = {
   container: {
+    width: '90vw',
     padding: '20px',
     backgroundColor: '#f4f6f8',
     borderRadius: '8px',

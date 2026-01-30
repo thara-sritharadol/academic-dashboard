@@ -57,7 +57,10 @@ const NetworkGraphZone = () => {
 
     const paintNode = useCallback((node, ctx, globalScale) => {
         const label = node.name;
+        const subLabel = [node.faculty, node.dept].filter(Boolean).join(', ');
+
         const fontSize = 12 / globalScale;
+        const subFontSize = 10 / globalScale;
         
         const radius = Math.sqrt(node.val) * 2 + 2;
         ctx.beginPath();
@@ -72,15 +75,21 @@ const NetworkGraphZone = () => {
         ctx.stroke();
 
         if (globalScale > 1.5 || node.val > 10) { 
-            ctx.font = `${fontSize}px Sans-Serif`;
+            ctx.font = `bold ${fontSize}px Sans-Serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#000';
-            ctx.fillText(label, node.x, node.y + radius + 4);
+            ctx.fillText(label, node.x, node.y + radius + 6);
+
+            if (subLabel) {
+                ctx.font = `${subFontSize}px Sans-Serif`;
+                ctx.fillStyle = '#666';
+                ctx.fillText(subLabel, node.x, node.y + radius + 6 + fontSize);
+            }
         }
     }, [clusterColorMap]);
 
-    if (loading) return <div style={{textAlign: 'center', padding: '50px'}}>🕸️ Building Network Graph...</div>;
+    if (loading) return <div style={{textAlign: 'center', padding: '50px'}}>Building Network Graph...</div>;
 
     return (
         <div style={styles.container}>
@@ -118,7 +127,7 @@ const NetworkGraphZone = () => {
                         fgRef.current.centerAt(node.x, node.y, 1000);
                         fgRef.current.zoom(3, 2000);
                     }}
-                    width={800} 
+                    width={1200} 
                     height={600}
                 />
             </div>

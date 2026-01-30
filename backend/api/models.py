@@ -5,6 +5,8 @@ class Author(models.Model):
     name = models.CharField(max_length=255)
     institution = models.CharField(max_length=255, null=True, blank=True)
     primary_cluster = models.CharField(max_length=255, null=True, blank=True)
+    faculty = models.CharField(max_length=255, null=True, blank=True)
+    department = models.CharField(max_length=266, null=True, blank=True)
 
     def __str__(self):
         return self.name
