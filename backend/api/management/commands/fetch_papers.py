@@ -1,6 +1,6 @@
 from tqdm import tqdm
 from django.core.management.base import BaseCommand
-from api.models import Paper, Author  # Import Author Model เพิ่มเข้ามา
+from api.models import Paper, Author
 from api.services.papers_fetch import stream_papers_from_apis
 
 class Command(BaseCommand):
@@ -71,11 +71,11 @@ class Command(BaseCommand):
                     pbar.update(1)
                     continue
 
-                # --- 1. แยกข้อมูล Authors (list of dicts) ออกมาก่อน ---
-                # ต้อง pop ออก เพราะ field 'authors_struct' ไม่มีจริงใน Model Paper
+                #separate the Authors information (list of dicts).
+                #popped out because the 'authors_struct' field doesn't actually exist in the Model Paper.
                 authors_struct = paper_data.pop("authors_struct", [])
                 
-                # --- 2. Save/Update Paper ---
+                #Save and Update Paper
                 if overwrite:
                     paper_obj, created = Paper.objects.update_or_create(
                         doi=doi,
@@ -93,8 +93,8 @@ class Command(BaseCommand):
                     if overwrite:
                         updated_count += 1
                 
-                # --- 3. Handle Many-to-Many Authors ---
-                # ถ้า overwrite เราอาจจะอยาก clear authors เก่าก่อน เพื่อความชัวร์
+                #Handle Many-to-Many Authors
+                #clear out the previous authors first, just to be safe
                 if overwrite:
                     paper_obj.authors.clear()
 
@@ -105,7 +105,7 @@ class Command(BaseCommand):
                     if not name:
                         continue
 
-                    # Logic: พยายามหาจาก OpenAlex ID ก่อน (แม่นยำสุด) ถ้าไม่มีให้หาจากชื่อ
+                    #Try searching using the OpenAlex ID first.
                     author_obj = None
                     
                     if oa_id:
@@ -114,12 +114,11 @@ class Command(BaseCommand):
                             defaults={"name": name}
                         )
                     else:
-                        # Fallback สำหรับ CrossRef หรือข้อมูลที่ไม่มี ID
                         author_obj, _ = Author.objects.get_or_create(
                             name=name
                         )
                     
-                    # เชื่อมความสัมพันธ์
+                    #relationships
                     if author_obj:
                         paper_obj.authors.add(author_obj)
 

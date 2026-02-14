@@ -41,7 +41,6 @@ class Command(BaseCommand):
             default=5,
             help="Minimum number of topics in Allowed List (Safety Net)."
         )
-        # ---------------------------------------------
 
         parser.add_argument(
             "--min-confidence",
@@ -154,14 +153,12 @@ class Command(BaseCommand):
                 try:
                     paper_text = f"{paper.title or ''}. {paper.abstract or ''}"
                     
-                    # --- ## CHANGED: เรียกใช้ get_allowed_list แบบใหม่ ## ---
                     allowed_list = aggregator.get_allowed_list(
                         paper_text, 
                         relative_threshold=options["relative_threshold"],
                         min_absolute=options["min_absolute_threshold"],
-                        min_k=options["min_k"] # <-- ส่งค่า Safety Net ไป
+                        min_k=options["min_k"]
                     )
-                    # -------------------------------------------------------
                     
                     if options['verbosity'] > 1:
                         pbar.write(f"\n--- Paper: {paper.id} ({paper.title[:50]}...) ---")

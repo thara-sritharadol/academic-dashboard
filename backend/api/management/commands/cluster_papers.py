@@ -1,13 +1,13 @@
-# api/management/commands/cluster_papers.py
+#api/management/commands/cluster_papers.py
+#Not Use
 from django.core.management.base import BaseCommand
-# Import Service จากโฟลเดอร์ services
 from api.services.clustering import ClusteringService 
 
 class Command(BaseCommand):
     help = 'Groups papers into clusters using K-Means algorithm'
 
     def add_arguments(self, parser):
-        # เพิ่ม parameter --k เพื่อกำหนดจำนวนกลุ่มได้จาก command line
+        #parameter --k for Define a group number command line
         parser.add_argument(
             '--k',
             type=int,

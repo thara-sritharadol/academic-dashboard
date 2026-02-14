@@ -1,3 +1,4 @@
+#Not Use
 import sys
 import re
 import numpy as np
@@ -61,17 +62,17 @@ class ClusteringService:
         #Main method for Clustering
         print(f"Starting Clustering Service (K={self.n_clusters})...")
         
-        # 1. fetch
+        #fetch
         papers = list(Paper.objects.filter(abstract__isnull=False).exclude(abstract=''))
         if len(papers) < self.n_clusters:
             print(f"Error: Not enough papers ({len(papers)}) for {self.n_clusters} clusters.")
             return
 
-        # 2. clean
+        #clean
         raw_abstracts = [p.abstract for p in papers]
         clean_abstracts = self._preprocess_abstracts(raw_abstracts)
 
-        # 3. Vectorization
+        #Vectorization
         print("   > Vectorizing abstracts (TF-IDF)...")
         try:
             vectorizer = TfidfVectorizer(
@@ -85,20 +86,20 @@ class ClusteringService:
             print(f"Error during vectorization: {e}")
             return
 
-        # 4. Group by K-Means
+        #Group by K-Means
         print("   > Running K-Means algorithm...")
         kmeans = KMeans(n_clusters=self.n_clusters, random_state=42, n_init=10)
         kmeans.fit(X)
 
-        # 5. Labeling
+        #Labeling
         print("   > Generating labels...")
         cluster_names = self._generate_labels(kmeans, vectorizer)
 
-        # 6. Save Results
+        #Save Results
         print("   > Saving results to Papers...")
         self._save_paper_results(papers, kmeans.labels_, cluster_names)
         
-        # 7. Update Authors - NEW!
+        #Update Authors
         print("   > Updating Author Profiles (Pre-calculating clusters)...")
         self._update_authors_primary_cluster()
         
@@ -125,13 +126,10 @@ class ClusteringService:
 
     def _update_authors_primary_cluster(self):
         #Calculate which research cluster each professor belongs to the most and record it in the 'primary_cluster' field of the Author.
-        #ดึงอาจารย์ที่มี Paper
         authors = Author.objects.annotate(paper_count=Count('papers')).filter(paper_count__gt=0).prefetch_related('papers')
         
         updates = []
         for author in authors:
-            #ดึง Cluster ทั้งหมดจาก Paper ของอาจารย์คนนี้
-            #ไม่เอาที่ไม่มี Abstract/Cluster
             clusters = [
                 p.cluster_label for p in author.papers.all() 
                 if p.cluster_label
@@ -140,15 +138,12 @@ class ClusteringService:
             if not clusters:
                 continue
 
-            #หาค่าที่ซ้ำเยอะที่สุด (Mode)
-            #เช่น ['AI', 'AI', 'Medical'] -> 'AI'
             from collections import Counter
             most_common = Counter(clusters).most_common(1)
             
             if most_common:
                 primary_cluster = most_common[0][0]
                 
-                #Update only if the value has changed
                 if author.primary_cluster != primary_cluster:
                     author.primary_cluster = primary_cluster
                     updates.append(author)

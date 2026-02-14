@@ -54,7 +54,7 @@ class Command(BaseCommand):
         threshold = options["threshold"]
         overwrite = options["overwrite"]
 
-        #Load Model and Skill Embeddings (Service)
+        #Load Model and Skill Embeddings
         try:
             classifier = SubSkillClassifier(model_name=model_name, source=source)
             classifier.stdout = lambda msg: self.stdout.write(msg) 

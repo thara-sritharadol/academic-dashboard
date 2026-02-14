@@ -17,7 +17,7 @@ class Command(BaseCommand):
 
         try:
             with transaction.atomic():
-                # 1. find main authors
+                #find main authors
                 try:
                     primary_author = Author.objects.get(openalex_id=primary_id)
                 except Author.DoesNotExist:
@@ -26,7 +26,7 @@ class Command(BaseCommand):
 
                 self.stdout.write(self.style.SUCCESS(f"Target Primary Author: {primary_author.name} ({primary_author.openalex_id})"))
 
-                # 2. loop to find duplicate author
+                #loop to find duplicate author
                 for dup_id in duplicate_ids:
                     try:
                         dup_author = Author.objects.get(openalex_id=dup_id)
@@ -37,19 +37,19 @@ class Command(BaseCommand):
                     if dup_author.id == primary_author.id:
                         continue
 
-                    # 3. move all duplicate's paper to main author
+                    #move all duplicate's paper to main author
                     papers = dup_author.papers.all()
                     count = papers.count()
                     
                     self.stdout.write(f"   > Merging {dup_author.name} ({dup_id}) with {count} papers...")
 
                     for paper in papers:
-                        # add main to paper
+                        #add main to paper
                         paper.authors.add(primary_author)
-                        # del duplicate
+                        #del duplicate
                         paper.authors.remove(dup_author)
 
-                    # 4. del duplicate
+                    #del duplicate
                     dup_author.delete()
                     self.stdout.write(self.style.SUCCESS(f"     Successfully merged & deleted {dup_id}"))
                 

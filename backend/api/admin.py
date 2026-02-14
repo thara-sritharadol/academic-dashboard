@@ -9,7 +9,7 @@ class AuthorAdmin(admin.ModelAdmin):
 @admin.register(Paper)
 class paperAdmin(admin.ModelAdmin):
     list_display = ('title', 'authors_text', 'year')
-    search_fields = ('authors_text',)
+    search_fields = ('authors_text', 'id', 'cluster_label')
 #admin.site.register(Paper)
 #admin.site.register(Author)
 #admin.site.register(SkillEmbedding)
