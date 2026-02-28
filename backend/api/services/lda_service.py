@@ -1,10 +1,16 @@
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import numpy as np
-import spacy # <--- ต้องใช้ Spacy
+import spacy 
 import logging
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.corpora.dictionary import Dictionary
+import pyLDAvis
+import pyLDAvis.lda_model
+import matplotlib.pyplot as plt
+import seaborn as sns
+import umap
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +19,6 @@ class LDAService:
         self.n_topics = n_topics
         self.nlp = None
         
-        #Load Spacy with same BERTopic
         try:
             self.nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
             self._setup_stopwords()
@@ -21,14 +26,13 @@ class LDAService:
             logger.error("Spacy model 'en_core_web_sm' not found.")
             raise
 
-        #Use CountVectorizer and Use Spacy's tokenizer
         self.vectorizer = CountVectorizer(
-            tokenizer=self.spacy_tokenizer, #Custom Tokenizer
-            max_df=0.95, 
-            min_df=2, 
+            tokenizer=self.spacy_tokenizer, 
+            max_df=0.90, 
+            min_df=5,
+            ngram_range=(1, 2)
         )
         
-        #LDA
         self.lda_model = LatentDirichletAllocation(
             n_components=n_topics,
             random_state=42,
@@ -36,6 +40,7 @@ class LDAService:
         )
         self.feature_names = None
         self.dtm = None
+        self.doc_topic_matrix = None # เพิ่มตัวแปรนี้เพื่อเก็บค่าให้ UMAP ใช้
 
     def _setup_stopwords(self):
         academic_stopwords = [
@@ -53,17 +58,15 @@ class LDAService:
     def spacy_tokenizer(self, text):
         if not text: return []
         doc = self.nlp(text)
-        #Stopwords, Punctuation, Number and Lemmatize
         return [token.lemma_.lower() for token in doc 
                 if not token.is_stop and not token.is_punct and not token.like_num and len(token) > 2]
 
     def fit_transform(self, documents):
         print(f"Training LDA with {self.n_topics} topics (using Spacy preprocessing)...")
-        #vectorizer use spacy_tokenizer
         self.dtm = self.vectorizer.fit_transform(documents)
         self.feature_names = self.vectorizer.get_feature_names_out()
-        lda_output = self.lda_model.fit_transform(self.dtm)
-        return lda_output
+        self.doc_topic_matrix = self.lda_model.fit_transform(self.dtm) # เก็บค่าลงตัวแปร
+        return self.doc_topic_matrix
 
     def get_top_words_list(self, n_top_words=10):
         topics_words = []
@@ -84,15 +87,8 @@ class LDAService:
         return len(unique_words) / total_words
 
     def calculate_coherence_score(self, documents):
-        # เพื่อความแฟร์ เราต้อง Tokenize เอกสารใหม่ด้วย Logic เดียวกันเพื่อส่งให้ Gensim
-        # (หรือจะใช้ tokenizer ของ vectorizer ก็ได้)
         print("Calculating LDA Coherence...")
-        tokenized_docs = self.vectorizer.build_analyzer()(documents[0]) # check analyzer
-        
-        # เนื่องจาก vectorizer.build_analyzer() ใน sklearn เมื่อใช้ custom tokenizer 
-        # มันจะเรียกฟังก์ชันนั้นเลย เราจึงวนลูปใช้ self.spacy_tokenizer ได้เลยเพื่อความชัวร์
         tokenized_docs = [self.spacy_tokenizer(doc) for doc in documents]
-        
         topics_words = self.get_top_words_list(n_top_words=10)
         dictionary = Dictionary(tokenized_docs)
         
@@ -107,3 +103,91 @@ class LDAService:
         except Exception as e:
             print(f"Coherence calc error: {e}")
             return 0.0
+
+    def export_pyldavis(self, output_path):
+        if self.lda_model is None or self.dtm is None or self.vectorizer is None:
+            print("Error: Model is not trained yet. Call fit_transform first.")
+            return
+        print("Preparing pyLDAvis visualization (this may take a moment)...")
+        vis_data = pyLDAvis.lda_model.prepare(self.lda_model, self.dtm, self.vectorizer, mds='tsne')
+        pyLDAvis.save_html(vis_data, output_path)
+
+    def export_top_words_barchart(self, output_path, n_top_words=10):
+        """สร้างกราฟแท่ง (Bar Chart) แสดงน้ำหนักของ 10 คำแรกในแต่ละ Topic"""
+        if self.lda_model is None or self.feature_names is None:
+            print("Error: LDA model not trained.")
+            return
+            
+        print("Generating Top Words Bar Chart...")
+        n_topics = self.n_topics
+        cols = 3 
+        rows = int(np.ceil(n_topics / cols))
+        
+        fig, axes = plt.subplots(rows, cols, figsize=(5*cols, 4*rows), sharex=False)
+        axes = axes.flatten()
+        
+        for t_idx, topic in enumerate(self.lda_model.components_):
+            top_features_ind = topic.argsort()[:-n_top_words - 1:-1]
+            top_features = [self.feature_names[i] for i in top_features_ind]
+            weights = topic[top_features_ind]
+            
+            ax = axes[t_idx]
+            ax.barh(top_features, weights, align='center', color='lightcoral') # เปลี่ยนเป็นสีส้มแดงให้ต่างจาก NMF
+            ax.invert_yaxis() 
+            ax.set_title(f'Topic {t_idx}', fontdict={'fontsize': 14, 'fontweight': 'bold'})
+            ax.tick_params(axis='both', which='major', labelsize=10)
+        
+        for i in range(n_topics, len(axes)):
+            fig.delaxes(axes[i])
+            
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300)
+        plt.close()
+
+    def export_document_scatter(self, output_path, cluster_ids, n_top_words_for_legend=5):
+        """สร้างพิกัด 2 มิติ (2D Scatter Plot) ด้วย UMAP พร้อมโชว์ Keyword บน Legend"""
+        if self.doc_topic_matrix is None:
+            print("Error: Document topic matrix not found.")
+            return
+            
+        print("Running UMAP for 2D visualization (This might take a moment)...")
+        reducer = umap.UMAP(n_components=2, random_state=42, metric='cosine')
+        embedding = reducer.fit_transform(self.doc_topic_matrix)
+        
+        unique_clusters = set(cluster_ids)
+        cluster_legend_map = {}
+        for t_idx in unique_clusters:
+            topic = self.lda_model.components_[t_idx]
+            top_features_ind = topic.argsort()[:-n_top_words_for_legend - 1:-1]
+            top_features = [self.feature_names[i] for i in top_features_ind]
+            keyword_str = ", ".join(top_features)
+            cluster_legend_map[t_idx] = f"Topic {t_idx}: {keyword_str}"
+            
+        legend_labels = [cluster_legend_map[cid] for cid in cluster_ids]
+        hue_order = [cluster_legend_map[i] for i in sorted(list(unique_clusters))]
+
+        df = pd.DataFrame({
+            'UMAP_1': embedding[:, 0],
+            'UMAP_2': embedding[:, 1],
+            'Cluster Focus': legend_labels
+        })
+        
+        plt.figure(figsize=(15, 8)) 
+        sns.scatterplot(
+            data=df, 
+            x='UMAP_1', 
+            y='UMAP_2', 
+            hue='Cluster Focus', 
+            hue_order=hue_order,
+            palette='tab10', 
+            alpha=0.8, 
+            s=40,
+            edgecolor='w',
+            linewidth=0.5
+        )
+        
+        plt.title('LDA Document Clusters (UMAP 2D Projection)', fontsize=16, fontweight='bold')
+        plt.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0., fontsize=10)
+        plt.tight_layout()
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.close()

@@ -24,7 +24,6 @@ def _enrich_with_semantic_scholar(doi: str) -> dict:
     return {}
 
 def _get_openalex_author_id(author_name: str) -> str:
-    """Helper function: ค้นหา ID ของผู้แต่งจากชื่อ"""
     url = "https://api.openalex.org/authors"
     params = {"search": author_name}
     try:

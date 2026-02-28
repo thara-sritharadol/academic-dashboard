@@ -1,3 +1,4 @@
+#NOT USE!!!
 import logging
 import numpy as np
 import pandas as pd
@@ -74,7 +75,8 @@ class ClusteringService:
         self.topic_model = BERTopic(
             umap_model=umap_model,
             min_topic_size=5,
-            embedding_model="allenai/specter",
+            #Maybe try specter2_base
+            embedding_model="allenai/specter2_base",
             vectorizer_model=self.vectorizer_model,
             calculate_probabilities=True,
             verbose=True,

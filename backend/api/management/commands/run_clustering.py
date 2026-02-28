@@ -1,3 +1,4 @@
+#NOT USE!!!
 from django.core.management.base import BaseCommand
 from api.services.clustering_service import ClusteringService
 import pandas as pd

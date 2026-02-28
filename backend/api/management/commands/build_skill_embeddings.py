@@ -1,3 +1,4 @@
+#NOT USE!!!
 from django.core.management.base import BaseCommand
 from api.services.skill_embedding_builder import build_and_save_skill_embeddings
 

@@ -1,10 +1,12 @@
+import time
+import requests
 from tqdm import tqdm
 from django.core.management.base import BaseCommand
 from api.models import Paper, Author
 from api.services.papers_fetch import stream_papers_from_apis
 
 class Command(BaseCommand):
-    help = "Fetch papers automatically from CrossRef/OpenAlex and save to DB with Author relations"
+    help = "Fetch papers automatically from CrossRef/OpenAlex and save to DB with Author relations and Concepts"
 
     def add_arguments(self, parser):
         parser.add_argument("--author", type=str, help="Author name to search")
@@ -61,6 +63,10 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.NOTICE(f"Found available papers, starting download..."))
         
+        headers = {
+            'User-Agent': 'mailto:thara.sri@dome.tu.ac.th' 
+        }
+
         saved_count = 0
         updated_count = 0
         
@@ -71,11 +77,10 @@ class Command(BaseCommand):
                     pbar.update(1)
                     continue
 
-                #separate the Authors information (list of dicts).
-                #popped out because the 'authors_struct' field doesn't actually exist in the Model Paper.
+                # Separate the Authors information
                 authors_struct = paper_data.pop("authors_struct", [])
                 
-                #Save and Update Paper
+                # 1. Save and Update Paper
                 if overwrite:
                     paper_obj, created = Paper.objects.update_or_create(
                         doi=doi,
@@ -93,8 +98,7 @@ class Command(BaseCommand):
                     if overwrite:
                         updated_count += 1
                 
-                #Handle Many-to-Many Authors
-                #clear out the previous authors first, just to be safe
+                # 2. Handle Many-to-Many Authors
                 if overwrite:
                     paper_obj.authors.clear()
 
@@ -105,22 +109,53 @@ class Command(BaseCommand):
                     if not name:
                         continue
 
-                    #Try searching using the OpenAlex ID first.
                     author_obj = None
-                    
                     if oa_id:
                         author_obj, _ = Author.objects.get_or_create(
                             openalex_id=oa_id,
                             defaults={"name": name}
                         )
                     else:
-                        author_obj, _ = Author.objects.get_or_create(
-                            name=name
-                        )
+                        # If no openalex_id, find by name (use first if duplicates exist)
+                        author_obj = Author.objects.filter(name=name).first()
+                        if not author_obj:
+                            author_obj = Author.objects.create(name=name)
                     
-                    #relationships
                     if author_obj:
                         paper_obj.authors.add(author_obj)
+
+                # 3. Fetch Concepts from OpenAlex directly
+                doi_str = doi.strip()
+                if not doi_str.startswith('http'):
+                    doi_url = f"https://doi.org/{doi_str}"
+                else:
+                    doi_url = doi_str
+                api_url = f"https://api.openalex.org/works/{doi_url}"
+
+                try:
+                    response = requests.get(api_url, headers=headers)
+                    if response.status_code == 200:
+                        data = response.json()
+                        concepts = [
+                            {
+                                'id': c.get('id'),
+                                'name': c.get('display_name'),
+                                'level': c.get('level'),
+                                'score': c.get('score')
+                            }
+                            for c in data.get('concepts', [])
+                        ]
+                        
+                        # บันทึก concepts ลง Database ทันที
+                        paper_obj.openalex_concepts = concepts
+                        paper_obj.save(update_fields=['openalex_concepts'])
+                        
+                except Exception as e:
+                    # ปริ้นท์ error ไว้ข้างล่าง progress bar
+                    tqdm.write(f"\nError fetching concepts for {doi}: {str(e)}")
+
+                # Sleep
+                time.sleep(0.1)
 
                 pbar.set_postfix_str(f"Now: {paper_data.get('title', '')[:30]}...", refresh=True)
                 pbar.update(1)
