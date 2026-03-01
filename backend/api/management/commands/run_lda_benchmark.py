@@ -33,7 +33,6 @@ class Command(BaseCommand):
         export_barchart = options.get('export_barchart')
         export_scatter = options.get('export_scatter')
         
-
         documents = []
         papers_data = [] 
         y_true_dominant = [] 
@@ -41,7 +40,7 @@ class Command(BaseCommand):
         target_key_hard = f'true_label_l{target_level}'
         target_key_multi = f'multi_labels_l{target_level}'
 
-        # --- 1. เตรียมข้อมูล ---
+        # --- เตรียมข้อมูลสำหรับการทดสอบ ---
         if input_file:
             self.stdout.write(self.style.NOTICE(f"Loading data from JSON: {input_file}"))
             with open(input_file, 'r', encoding='utf-8') as f:

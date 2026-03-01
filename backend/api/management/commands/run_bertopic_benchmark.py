@@ -19,8 +19,9 @@ class Command(BaseCommand):
         parser.add_argument('--export_json', type=str, help='File path to export results as JSON')
         parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
         
-        #1. เพิ่ม Argument สำหรับเลือกโหมด
         parser.add_argument('--use_approx_dist', action='store_true', help='Use approximate_distribution (c-TF-IDF) instead of HDBSCAN probabilities')
+        
+        parser.add_argument('--use_lemmatized_input', action='store_true', help='Preprocess input text (lemmatization/stopwords) before passing to Specter 2')
         
         parser.add_argument('--export_barchart', type=str, help='File path to export Custom Bar Chart (e.g., bertopic_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export Custom UMAP Scatter Plot (e.g., bertopic_scatter.png)')
@@ -34,8 +35,9 @@ class Command(BaseCommand):
         export_json = options.get('export_json')
         export_csv = options.get('export_csv')
         
-        #2. ดึงค่าโหมด
         use_approx_dist = options.get('use_approx_dist')
+        # 2. ดึงค่าโหมด
+        use_lemmatized_input = options.get('use_lemmatized_input')
         
         export_barchart = options.get('export_barchart') 
         export_scatter = options.get('export_scatter')   
@@ -102,8 +104,8 @@ class Command(BaseCommand):
 
         # --- 2. Run BERTopic Service (พร้อมจับเวลา) ---
         start_time = time.time()
-        # 3. ส่งตัวแปรเข้าไปตั้งค่า
-        bertopic_service = BERTopicService(n_topics=k_option, use_approx_dist=use_approx_dist)
+        #  3. ส่งตัวแปรเข้าไปตั้งค่า
+        bertopic_service = BERTopicService(n_topics=k_option, use_approx_dist=use_approx_dist, use_lemmatized_input=use_lemmatized_input)
         topics, probs = bertopic_service.fit_transform(documents)
         end_time = time.time()
         execution_time = end_time - start_time
@@ -138,11 +140,9 @@ class Command(BaseCommand):
             pred_labels = set()
             doc_probs = probs[i]
             
-            # ดึงค่าความน่าจะเป็นที่สูงที่สุดของเปเปอร์ใบนี้มาเป็นเกณฑ์ตั้งต้น
             max_prob = max(doc_probs) if len(doc_probs) > 0 else 0
             
             for t_id, prob in enumerate(doc_probs):
-                # Relative Threshold: Topic รอง ต้องมีน้ำหนักเกิน 0.1 และ ต้องมีน้ำหนักไม่น้อยกว่า 30% ของ Topic หลัก
                 if prob > 0.1 and prob >= (max_prob * 0.3): 
                     mapped_label = cluster_to_label_map.get(t_id, "Unknown")
                     if mapped_label != "Unknown": pred_labels.add(mapped_label)
@@ -175,7 +175,8 @@ class Command(BaseCommand):
         # --- 6. แสดงผลรวม ---
         print("\n" + "="*60)
         mode_str = "(Approx Dist)" if use_approx_dist else "(HDBSCAN Prob)"
-        print(f"BERTopic BENCHMARK RESULTS {mode_str} - Level {target_level}")
+        lemma_str = "[LEMMATIZED INPUT]" if use_lemmatized_input else "[RAW TEXT]"
+        print(f"BERTopic BENCHMARK RESULTS {mode_str} {lemma_str} - Level {target_level}")
         print("="*60)
         print(f"{'NMI Score (Single)':<30} | {nmi:.4f}")
         print(f"{'Purity (Single)':<30} | {purity:.4f}")

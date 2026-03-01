@@ -15,10 +15,11 @@ import umap as umap_learn
 logger = logging.getLogger(__name__)
 
 class BERTopicService:
-    # 💡 1. เพิ่มตัวแปร use_approx_dist (ค่าเริ่มต้นคือ False เพื่อให้พฤติกรรมเดิมทำงานปกติ)
-    def __init__(self, n_topics=None, use_approx_dist=False):
+    # 1. เพิ่มตัวแปร use_lemmatized_input
+    def __init__(self, n_topics=None, use_approx_dist=False, use_lemmatized_input=False):
         self.n_topics = n_topics 
         self.use_approx_dist = use_approx_dist
+        self.use_lemmatized_input = use_lemmatized_input
         self.nlp = None
         self.topic_model = None
         self.topics = None
@@ -58,11 +59,22 @@ class BERTopicService:
     def fit_transform(self, documents):
         print(f"Training BERTopic (Target Topics: {self.n_topics if self.n_topics else 'Auto'})...")
         
-        # 💡 2. พิมพ์แจ้งเตือนว่ากำลังใช้ Mode ไหน
         if self.use_approx_dist:
             print("Mode: approximate_distribution (c-TF-IDF for Soft Clustering)")
         else:
             print("Mode: calculate_probabilities (HDBSCAN for Confidence Score)")
+
+        # 2. ตัดสินใจว่าจะส่งข้อความแบบไหนให้ Specter 2
+        if self.use_lemmatized_input:
+            print("Input: Lemmatized Text (Applying Spacy preprocessing before embedding)...")
+            train_docs = []
+            for doc in documents:
+                # สกัดคำเป็น list แล้วเชื่อมกลับเป็นประโยคด้วยช่องว่าง
+                tokens = self.spacy_tokenizer(doc)
+                train_docs.append(" ".join(tokens))
+        else:
+            print("Input: Raw Text (Default for Specter 2)")
+            train_docs = documents
 
         umap_model = UMAP(
             n_neighbors=15,
@@ -77,30 +89,24 @@ class BERTopicService:
             umap_model=umap_model,
             embedding_model="allenai/specter2_base",
             vectorizer_model=self.vectorizer_model,
-            # 💡 3. ถ้าใช้ Approx Dist เราจะปิดการหา Prob ของ HDBSCAN เพื่อประหยัดเวลาและหน่วยความจำ
             calculate_probabilities=not self.use_approx_dist,
             nr_topics=self.n_topics if self.n_topics else "auto",
             verbose=True,
             top_n_words=10
         )
 
-        # ฝึกสอนโมเดล (ถ้า calculate_probabilities=False ตัว probs จะคืนค่าเป็น None)
-        self.topics, self.probs = self.topic_model.fit_transform(documents)
+        # 3. ใช้ train_docs แทน documents ต้นฉบับ
+        self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
-        # 💡 4. ถ้าเปิดโหมด Approx Dist ให้คำนวณ Distribution แยกต่างหาก แล้วเอาไปทับตัวแปร probs
         if self.use_approx_dist:
             print("Calculating approximate topic distributions (c-TF-IDF)...")
-            # 4.1 ปรับลด min_similarity ลง เพื่อดึงเศษคะแนนที่ซ่อนอยู่ออกมา
             topic_distr, _ = self.topic_model.approximate_distribution(
-                documents, 
-                min_similarity=0,
-                window=4
-                
+                train_docs, # ใช้ train_docs ในการหา Distribution ด้วย
+                min_similarity=0.01
             )
             
-            # 4.2 ทำ Normalization ให้ผลรวมแต่ละเปเปอร์เข้าใกล้ 1.0 เสมอ (เหมือน NMF)
             row_sums = topic_distr.sum(axis=1)
-            row_sums[row_sums == 0] = 1 # ป้องกัน Error หารด้วย 0 สำหรับเปเปอร์ที่ Outlier จริงๆ
+            row_sums[row_sums == 0] = 1 
             topic_distr = topic_distr / row_sums[:, np.newaxis]
             
             self.probs = topic_distr
