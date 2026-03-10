@@ -95,13 +95,13 @@ class BERTopicService:
             top_n_words=10
         )
 
-        # 3. ใช้ train_docs แทน documents ต้นฉบับ
+        # 3. ใช้ train_docs แทน documents
         self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
         if self.use_approx_dist:
             print("Calculating approximate topic distributions (c-TF-IDF)...")
             topic_distr, _ = self.topic_model.approximate_distribution(
-                train_docs, # ใช้ train_docs ในการหา Distribution ด้วย
+                train_docs, # ใช้ train_docs ในการหา Distribution ด้วย, ค่าที่อาจจะผ่านการ Lemma หรือไม่ผ่าน
                 min_similarity=0.01
             )
             
