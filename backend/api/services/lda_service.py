@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import umap
 import pandas as pd
+import plotly.express as px
 
 logger = logging.getLogger(__name__)
 
@@ -191,3 +192,46 @@ class LDAService:
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
+
+    def export_document_scatter_3d(self, output_path, cluster_ids, n_top_words_for_legend=5):
+        """สร้างพิกัด 3 มิติ (3D Scatter Plot) ด้วย UMAP บันทึกเป็น Interactive HTML"""
+        if self.doc_topic_matrix is None:
+            print("Error: Document topic matrix not found.")
+            return
+            
+        print("Running UMAP for 3D visualization (This might take a moment)...")
+        # เปลี่ยน n_components เป็น 3
+        reducer = umap.UMAP(n_components=3, random_state=42, metric='cosine')
+        embedding = reducer.fit_transform(self.doc_topic_matrix)
+        
+        unique_clusters = set(cluster_ids)
+        cluster_legend_map = {}
+        for t_idx in unique_clusters:
+            topic = self.lda_model.components_[t_idx]
+            top_features_ind = topic.argsort()[:-n_top_words_for_legend - 1:-1]
+            top_features = [self.feature_names[i] for i in top_features_ind]
+            keyword_str = ", ".join(top_features)
+            cluster_legend_map[t_idx] = f"Topic {t_idx}: {keyword_str}"
+            
+        legend_labels = [cluster_legend_map[cid] for cid in cluster_ids]
+
+        df = pd.DataFrame({
+            'UMAP_1': embedding[:, 0],
+            'UMAP_2': embedding[:, 1],
+            'UMAP_3': embedding[:, 2],
+            'Cluster Focus': legend_labels
+        })
+        
+        fig = px.scatter_3d(
+            df, x='UMAP_1', y='UMAP_2', z='UMAP_3',
+            color='Cluster Focus',
+            title='LDA Document Clusters (UMAP 3D Projection)',
+            opacity=0.8,
+            color_discrete_sequence=px.colors.qualitative.Alphabet
+        )
+        
+        fig.update_traces(marker=dict(size=4, line=dict(width=0.5, color='white')))
+        fig.update_layout(legend=dict(itemsizing='constant'))
+        
+        fig.write_html(output_path)
+        print(f"Successfully saved 3D scatter plot to {output_path}")

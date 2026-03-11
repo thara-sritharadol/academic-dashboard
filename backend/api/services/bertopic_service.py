@@ -6,7 +6,7 @@ from umap import UMAP
 from bertopic import BERTopic
 from gensim.models.coherencemodel import CoherenceModel
 from gensim.corpora.dictionary import Dictionary
-
+import plotly.express as px
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
@@ -220,6 +220,55 @@ class BERTopicService:
         plt.tight_layout()
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         plt.close()
+
+    def export_document_scatter_3d(self, output_path, cluster_ids, n_top_words_for_legend=5):
+        if self.probs is None: return
+        print("Running UMAP for 3D visualization (This might take a moment)...")
+        
+        reducer = umap_learn.UMAP(n_components=3, random_state=42, metric='cosine')
+        embedding = reducer.fit_transform(self.probs)
+        
+        unique_clusters = set(cluster_ids)
+        cluster_legend_map = {}
+        
+        for t_idx in unique_clusters:
+            if t_idx == -1:
+                cluster_legend_map[t_idx] = "Topic -1: Outliers / Noise"
+            else:
+                topic_data = self.topic_model.get_topic(t_idx)
+                if topic_data:
+                    top_features = [word for word, _ in topic_data[:n_top_words_for_legend]]
+                    keyword_str = ", ".join(top_features)
+                    cluster_legend_map[t_idx] = f"Topic {t_idx}: {keyword_str}"
+                else:
+                    cluster_legend_map[t_idx] = f"Topic {t_idx}: Unknown"
+            
+        legend_labels = [cluster_legend_map[cid] for cid in cluster_ids]
+
+        # สร้าง DataFrame สำหรับ 3 มิติ
+        df = pd.DataFrame({
+            'UMAP_1': embedding[:, 0], 
+            'UMAP_2': embedding[:, 1], 
+            'UMAP_3': embedding[:, 2], 
+            'Cluster Focus': legend_labels
+        })
+        
+        # use Plotly create 3D Scatter Plot
+        fig = px.scatter_3d(
+            df, x='UMAP_1', y='UMAP_2', z='UMAP_3',
+            color='Cluster Focus',
+            title='BERTopic Document Clusters (UMAP 3D Projection)',
+            opacity=0.8,
+            color_discrete_sequence=px.colors.qualitative.Alphabet
+        )
+        
+        # ปรับขนาดจุดให้ดูง่ายขึ้น
+        fig.update_traces(marker=dict(size=4, line=dict(width=0.5, color='white')))
+        fig.update_layout(legend=dict(itemsizing='constant')) # ให้ขนาดจุดใน legend คงที่
+        
+        # บันทึกเป็นไฟล์ HTML
+        fig.write_html(output_path)
+        print(f"Successfully saved 3D scatter plot to {output_path}")
 
     def export_bertopic_html(self, output_prefix):
         if self.topic_model is None: return

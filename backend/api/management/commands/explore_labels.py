@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from api.models import Paper
 
 class Command(BaseCommand):
-    help = 'Explore and count True Labels distribution in the dataset'
+    help = 'Explore and count True Labels distribution in the dataset including intersections'
 
     def add_arguments(self, parser):
         parser.add_argument('--input', type=str, help='Path to JSON dataset (optional)')
@@ -46,7 +46,9 @@ class Command(BaseCommand):
                         true_labels_set.add(top_label)
 
                 if true_labels_set:
-                    all_true_labels.extend(list(true_labels_set))
+                    # จัดเรียงตัวอักษรและเชื่อม Label ด้วย ' + ' 
+                    combo_label = " + ".join(sorted(list(true_labels_set)))
+                    all_true_labels.append(combo_label)
                     total_papers += 1
                 else:
                     papers_without_labels += 1
@@ -55,12 +57,18 @@ class Command(BaseCommand):
             papers = Paper.objects.exclude(abstract__isnull=True).exclude(abstract__exact='')
             for paper in papers:
                 concepts = paper.openalex_concepts
+                if not isinstance(concepts, list):
+                    papers_without_labels += 1
+                    continue
+                    
                 true_labels_set = set()
-                valid_concepts = [c for c in concepts if c.get('level') == target_level and c.get('score', 0) >= threshold]
+                valid_concepts = [c for c in concepts if isinstance(c, dict) and c.get('level') == target_level and c.get('score', 0) >= threshold]
                 true_labels_set.update([c['name'] for c in valid_concepts])
                 
                 if true_labels_set:
-                    all_true_labels.extend(list(true_labels_set))
+                    # จัดเรียงตัวอักษรและเชื่อม Label ด้วย ' + ' 
+                    combo_label = " + ".join(sorted(list(true_labels_set)))
+                    all_true_labels.append(combo_label)
                     total_papers += 1
                 else:
                     papers_without_labels += 1
@@ -70,18 +78,18 @@ class Command(BaseCommand):
         total_classes = len(label_counts)
 
         # พิมพ์สรุปผล
-        print("\n" + "="*60)
-        print("DATASET LABEL DISTRIBUTION (EDA)")
-        print("="*60)
+        print("\n" + "="*80)
+        print("DATASET LABEL DISTRIBUTION (EDA) - INTERSECTION COUNT")
+        print("="*80)
         print(f"Total Papers Processed   : {total_papers + papers_without_labels}")
         print(f"Papers with valid labels : {total_papers}")
         print(f"Papers skipped (No label): {papers_without_labels}")
-        print(f"Total Unique Classes     : {total_classes} classes")
-        print("-" * 60)
-        print(f"{'Rank':<5} | {'Class Name (True Label)':<35} | {'Count':<10}")
-        print("-" * 60)
+        print(f"Total Unique Classes     : {total_classes} classes (including combinations)")
+        print("-" * 80)
+        print(f"{'Rank':<5} | {'Class Name (True Label Combinations)':<50} | {'Count':<10}")
+        print("-" * 80)
         
         for i, (label, count) in enumerate(label_counts.most_common()):
-            print(f"{i+1:<5} | {label:<35} | {count:<10}")
+            print(f"{i+1:<5} | {label:<50} | {count:<10}")
         
-        print("="*60)
+        print("="*80)

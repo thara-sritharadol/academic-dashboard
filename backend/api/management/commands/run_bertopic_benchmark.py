@@ -18,13 +18,11 @@ class Command(BaseCommand):
         parser.add_argument('--target_level', type=int, choices=[0, 1, 2], default=1, help='Target concept level')
         parser.add_argument('--export_json', type=str, help='File path to export results as JSON')
         parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
-        
         parser.add_argument('--use_approx_dist', action='store_true', help='Use approximate_distribution (c-TF-IDF) instead of HDBSCAN probabilities')
-        
         parser.add_argument('--use_lemmatized_input', action='store_true', help='Preprocess input text (lemmatization/stopwords) before passing to Specter 2')
-        
         parser.add_argument('--export_barchart', type=str, help='File path to export Custom Bar Chart (e.g., bertopic_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export Custom UMAP Scatter Plot (e.g., bertopic_scatter.png)')
+        parser.add_argument('--export_scatter_3d', type=str, help='File path to export Custom UMAP 3D Scatter Plot as HTML (e.g., bertopic_scatter_3d.html)')
         parser.add_argument('--export_html', type=str, help='Prefix path to export BERTopic HTMLs (e.g., bertopic_html)')
 
     def handle(self, *args, **options):
@@ -34,13 +32,12 @@ class Command(BaseCommand):
         target_level = options.get('target_level')
         export_json = options.get('export_json')
         export_csv = options.get('export_csv')
-        
         use_approx_dist = options.get('use_approx_dist')
         # 2. ดึงค่าโหมด
         use_lemmatized_input = options.get('use_lemmatized_input')
-        
         export_barchart = options.get('export_barchart') 
-        export_scatter = options.get('export_scatter')   
+        export_scatter = options.get('export_scatter') 
+        export_scatter_3d = options.get('export_scatter_3d')  
         export_html = options.get('export_html')         
 
         documents = []
@@ -231,6 +228,10 @@ class Command(BaseCommand):
         if export_scatter:
             bertopic_service.export_document_scatter(export_scatter, topics)
             self.stdout.write(self.style.SUCCESS(f"Exported UMAP Scatter Plot: {export_scatter}"))
+
+        if export_scatter_3d:
+            bertopic_service.export_document_scatter_3d(export_scatter_3d, topics)
+            self.stdout.write(self.style.SUCCESS(f"Exported UMAP 3D Scatter Plot HTML: {export_scatter_3d}"))
 
         if export_html:
             bertopic_service.export_bertopic_html(export_html)

@@ -21,6 +21,7 @@ class Command(BaseCommand):
         parser.add_argument('--export_html', type=str, help='File path to export pyLDAvis HTML (e.g., lda_vis.html)')
         parser.add_argument('--export_barchart', type=str, help='File path to export Top Words Bar Chart (e.g., lda_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export UMAP Scatter Plot (e.g., lda_scatter.png)')
+        parser.add_argument('--export_scatter_3d', type=str, help='File path to export UMAP 3D Scatter Plot HTML (e.g., lda_scatter_3d.html)')
 
     def handle(self, *args, **options):
         input_file = options.get('input')
@@ -32,6 +33,7 @@ class Command(BaseCommand):
         export_html = options.get('export_html')
         export_barchart = options.get('export_barchart')
         export_scatter = options.get('export_scatter')
+        export_scatter_3d = options.get('export_scatter_3d')
         
         documents = []
         papers_data = [] 
@@ -241,3 +243,7 @@ class Command(BaseCommand):
         if export_scatter:
             lda_service.export_document_scatter(export_scatter, y_pred_hard_ids)
             self.stdout.write(self.style.SUCCESS(f"Exported UMAP Scatter Plot: {export_scatter}"))
+
+        if export_scatter_3d:
+            lda_service.export_document_scatter_3d(export_scatter_3d, y_pred_hard_ids)
+            self.stdout.write(self.style.SUCCESS(f"Exported UMAP 3D Scatter Plot: {export_scatter_3d}"))

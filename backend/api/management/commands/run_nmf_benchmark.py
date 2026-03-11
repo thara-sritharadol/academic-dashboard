@@ -20,6 +20,7 @@ class Command(BaseCommand):
         parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
         parser.add_argument('--export_barchart', type=str, help='File path to export Top Words Bar Chart (e.g., nmf_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export UMAP Scatter Plot (e.g., nmf_scatter.png)')
+        parser.add_argument('--export_scatter_3d', type=str, help='File path to export UMAP 3D Scatter Plot HTML (e.g., nmf_scatter_3d.html)')
 
     def handle(self, *args, **options):
         input_file = options.get('input')
@@ -30,6 +31,7 @@ class Command(BaseCommand):
         export_csv = options.get('export_csv')
         export_barchart = options.get('export_barchart')
         export_scatter = options.get('export_scatter')
+        export_scatter_3d = options.get('export_scatter_3d')
 
         documents = []
         papers_data = [] 
@@ -221,3 +223,7 @@ class Command(BaseCommand):
         if export_scatter:
             nmf_service.export_document_scatter(export_scatter, y_pred_hard_ids)
             self.stdout.write(self.style.SUCCESS(f"Exported UMAP Scatter Plot: {export_scatter}"))
+
+        if export_scatter_3d:
+            nmf_service.export_document_scatter_3d(export_scatter_3d, y_pred_hard_ids)
+            self.stdout.write(self.style.SUCCESS(f"Exported UMAP 3D Scatter Plot: {export_scatter_3d}"))

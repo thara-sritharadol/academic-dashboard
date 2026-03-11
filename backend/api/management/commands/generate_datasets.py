@@ -62,17 +62,17 @@ class Command(BaseCommand):
                 'multi_labels_l0': multi_l0, # For Multi-label Evaluation
                 'multi_labels_l1': multi_l1, # For Multi-label Evaluation
                 'multi_labels_l2': multi_l2, # For Multi-label Evaluation
-                'openalex_concepts': concepts        # Raw
+                'openalex_concepts': concepts # Raw
             }
 
-            allowed_labels = {"Medicine", "Biology"}
+            allowed_labels = {"Mathematics", "Computer science"}
             paper_labels = set(multi_l0)
 
             # เช็คว่ามีข้อมูลใน paper_labels และทุก Label ต้องอยู่ใน allowed_labels เท่านั้น
             if paper_labels and paper_labels.issubset(allowed_labels):
                 dataset.append(paper_data)
 
-        self.save_json('dataset_med_bio.json', dataset)
+        self.save_json('dataset_math_comsci.json', dataset)
 
 
         self.stdout.write(self.style.SUCCESS(
