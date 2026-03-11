@@ -5,7 +5,6 @@ class Author(models.Model):
     name = models.CharField(max_length=255)
     institution = models.CharField(max_length=255, null=True, blank=True)
     primary_cluster = models.CharField(max_length=255, null=True, blank=True)
-    #{AI 0.5 Medical 0.5}
     topic_profile = models.JSONField(null=True, blank=True)
     faculty = models.CharField(max_length=255, null=True, blank=True)
     department = models.CharField(max_length=266, null=True, blank=True)
