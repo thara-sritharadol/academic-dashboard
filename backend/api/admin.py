@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Paper, Author,SkillEmbedding, ExtractedSkill, ExtractedSubSkill
+from .models import Paper, Author
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):

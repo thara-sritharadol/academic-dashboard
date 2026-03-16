@@ -46,7 +46,6 @@ class Command(BaseCommand):
                         true_labels_set.add(top_label)
 
                 if true_labels_set:
-                    # จัดเรียงตัวอักษรและเชื่อม Label ด้วย ' + ' 
                     combo_label = " + ".join(sorted(list(true_labels_set)))
                     all_true_labels.append(combo_label)
                     total_papers += 1
@@ -66,18 +65,15 @@ class Command(BaseCommand):
                 true_labels_set.update([c['name'] for c in valid_concepts])
                 
                 if true_labels_set:
-                    # จัดเรียงตัวอักษรและเชื่อม Label ด้วย ' + ' 
                     combo_label = " + ".join(sorted(list(true_labels_set)))
                     all_true_labels.append(combo_label)
                     total_papers += 1
                 else:
                     papers_without_labels += 1
 
-        # วิเคราะห์ผลลัพธ์
         label_counts = Counter(all_true_labels)
         total_classes = len(label_counts)
 
-        # พิมพ์สรุปผล
         print("\n" + "="*80)
         print("DATASET LABEL DISTRIBUTION (EDA) - INTERSECTION COUNT")
         print("="*80)
