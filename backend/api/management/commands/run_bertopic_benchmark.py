@@ -14,12 +14,18 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--input', type=str, help='Path to JSON dataset (optional)')
         parser.add_argument('--k', type=int, help='Manually reduce number of topics K (optional)')
+
         parser.add_argument('--threshold', type=float, default=0.3, help='Score threshold for multi-labels')
-        parser.add_argument('--target_level', type=int, choices=[0, 1, 2], default=1, help='Target concept level')
-        parser.add_argument('--export_json', type=str, help='File path to export results as JSON')
-        parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
+        parser.add_argument('--abs_threshold', type=float, default=0.1, help='Absolute probability threshold (e.g., 0.1)')
+        parser.add_argument('--rel_threshold', type=float, default=0.3, help='Relative threshold multiplier (e.g., 0.3)')
+
         parser.add_argument('--use_approx_dist', action='store_true', help='Use approximate_distribution (c-TF-IDF) instead of HDBSCAN probabilities')
         parser.add_argument('--use_lemmatized_input', action='store_true', help='Preprocess input text (lemmatization/stopwords) before passing to Specter 2')
+
+        parser.add_argument('--target_level', type=int, choices=[0, 1, 2], default=1, help='Target concept level')
+
+        parser.add_argument('--export_json', type=str, help='File path to export results as JSON')
+        parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
         parser.add_argument('--export_barchart', type=str, help='File path to export Custom Bar Chart (e.g., bertopic_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export Custom UMAP Scatter Plot (e.g., bertopic_scatter.png)')
         parser.add_argument('--export_scatter_3d', type=str, help='File path to export Custom UMAP 3D Scatter Plot as HTML (e.g., bertopic_scatter_3d.html)')
@@ -29,11 +35,12 @@ class Command(BaseCommand):
         input_file = options.get('input')
         k_option = options.get('k')
         threshold = options.get('threshold')
+        abs_threshold = options.get('abs_threshold')
+        rel_threshold = options.get('rel_threshold')
         target_level = options.get('target_level')
         export_json = options.get('export_json')
         export_csv = options.get('export_csv')
         use_approx_dist = options.get('use_approx_dist')
-        # 2. ดึงค่าโหมด
         use_lemmatized_input = options.get('use_lemmatized_input')
         export_barchart = options.get('export_barchart') 
         export_scatter = options.get('export_scatter') 
@@ -140,7 +147,7 @@ class Command(BaseCommand):
             max_prob = max(doc_probs) if len(doc_probs) > 0 else 0
             
             for t_id, prob in enumerate(doc_probs):
-                if prob > 0.1 and prob >= (max_prob * 0.3): 
+                if prob > abs_threshold and prob >= (max_prob * rel_threshold): 
                     mapped_label = cluster_to_label_map.get(t_id, "Unknown")
                     if mapped_label != "Unknown": pred_labels.add(mapped_label)
             

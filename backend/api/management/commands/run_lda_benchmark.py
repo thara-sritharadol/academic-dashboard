@@ -14,19 +14,26 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--input', type=str, help='Path to JSON dataset (optional)')
         parser.add_argument('--k', type=int, help='Manually set number of topics K (optional)')
+
         parser.add_argument('--threshold', type=float, default=0.3, help='Score threshold for multi-labels')
+        parser.add_argument('--abs_threshold', type=float, default=0.1, help='Absolute probability threshold (e.g., 0.1)')
+        parser.add_argument('--rel_threshold', type=float, default=0.3, help='Relative threshold multiplier (e.g., 0.3)')
+
         parser.add_argument('--target_level', type=int, choices=[0, 1, 2], default=1, help='Target concept level')
+
         parser.add_argument('--export_json', type=str, help='File path to export results as JSON')
         parser.add_argument('--export_csv', type=str, help='File path to export results as CSV')
         parser.add_argument('--export_html', type=str, help='File path to export pyLDAvis HTML (e.g., lda_vis.html)')
         parser.add_argument('--export_barchart', type=str, help='File path to export Top Words Bar Chart (e.g., lda_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export UMAP Scatter Plot (e.g., lda_scatter.png)')
         parser.add_argument('--export_scatter_3d', type=str, help='File path to export UMAP 3D Scatter Plot HTML (e.g., lda_scatter_3d.html)')
-
+        
     def handle(self, *args, **options):
         input_file = options.get('input')
         k_option = options.get('k')
         threshold = options.get('threshold')
+        abs_threshold = options.get('abs_threshold')
+        rel_threshold = options.get('rel_threshold')
         target_level = options.get('target_level')
         export_json = options.get('export_json')
         export_csv = options.get('export_csv')
@@ -156,7 +163,7 @@ class Command(BaseCommand):
             
             for t_id, prob in enumerate(probs):
                 # Relative Threshold: Topic รอง ต้องมีน้ำหนักเกิน 0.1 "และ" ต้องมีน้ำหนักไม่น้อยกว่า 30% ของ Topic หลัก
-                if prob > 0.1 and prob >= (max_prob * 0.3): 
+                if prob > abs_threshold and prob >= (max_prob * rel_threshold): 
                     mapped_label = cluster_to_label_map.get(t_id, "Unknown")
                     if mapped_label != "Unknown": pred_labels.add(mapped_label)
             
