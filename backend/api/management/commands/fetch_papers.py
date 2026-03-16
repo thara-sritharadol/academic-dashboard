@@ -80,7 +80,7 @@ class Command(BaseCommand):
                 # Separate the Authors information
                 authors_struct = paper_data.pop("authors_struct", [])
                 
-                # 1. Save and Update Paper
+                # Save and Update Paper
                 if overwrite:
                     paper_obj, created = Paper.objects.update_or_create(
                         doi=doi,
@@ -98,7 +98,7 @@ class Command(BaseCommand):
                     if overwrite:
                         updated_count += 1
                 
-                # 2. Handle Many-to-Many Authors
+                # 2Handle Many-to-Many Authors
                 if overwrite:
                     paper_obj.authors.clear()
 
