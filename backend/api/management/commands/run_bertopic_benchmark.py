@@ -29,6 +29,10 @@ class Command(BaseCommand):
         parser.add_argument('--export_barchart', type=str, help='File path to export Custom Bar Chart (e.g., bertopic_bar.png)')
         parser.add_argument('--export_scatter', type=str, help='File path to export Custom UMAP Scatter Plot (e.g., bertopic_scatter.png)')
         parser.add_argument('--export_scatter_3d', type=str, help='File path to export Custom UMAP 3D Scatter Plot as HTML (e.g., bertopic_scatter_3d.html)')
+        parser.add_argument('--export_true_scatter_3d', type=str, help='File path to export Ground Truth UMAP 3D (e.g., true_scatter_3d.html)')
+
+        parser.add_argument('--group_multi', action='store_true', help='Group all multi-label papers into a single "Multi-label" color')
+
         parser.add_argument('--export_html', type=str, help='Prefix path to export BERTopic HTMLs (e.g., bertopic_html)')
 
     def handle(self, *args, **options):
@@ -44,7 +48,9 @@ class Command(BaseCommand):
         use_lemmatized_input = options.get('use_lemmatized_input')
         export_barchart = options.get('export_barchart') 
         export_scatter = options.get('export_scatter') 
-        export_scatter_3d = options.get('export_scatter_3d')  
+        export_scatter_3d = options.get('export_scatter_3d')
+        export_true_scatter_3d = options.get('export_true_scatter_3d')
+        group_multi = options.get('group_multi')
         export_html = options.get('export_html')         
 
         documents = []
@@ -239,6 +245,28 @@ class Command(BaseCommand):
         if export_scatter_3d:
             bertopic_service.export_document_scatter_3d(export_scatter_3d, topics)
             self.stdout.write(self.style.SUCCESS(f"Exported UMAP 3D Scatter Plot HTML: {export_scatter_3d}"))
+
+        if export_true_scatter_3d:
+            true_labels_for_plot = []
+            
+            for p in papers_data:
+                labels = p.get('true_labels', [])
+                
+                if len(labels) > 1:
+                    # เช็คสวิตช์ว่าต้องการยุบรวมสีไหม
+                    if group_multi:
+                        true_labels_for_plot.append("Multi-label (Interdisciplinary)")
+                        sorted_labels = sorted([str(l) for l in labels])
+                        compound_label = " + ".join(sorted_labels)
+                        true_labels_for_plot.append(compound_label)
+                elif len(labels) == 1:
+                    true_labels_for_plot.append(str(labels[0]))
+                else:
+                    true_labels_for_plot.append("Unknown")
+
+            # ส่งไปพล็อต
+            bertopic_service.export_ground_truth_scatter_3d(export_true_scatter_3d, true_labels_for_plot)
+            self.stdout.write(self.style.SUCCESS(f"Exported Ground Truth 3D Scatter Plot: {export_true_scatter_3d}"))
 
         if export_html:
             bertopic_service.export_bertopic_html(export_html)

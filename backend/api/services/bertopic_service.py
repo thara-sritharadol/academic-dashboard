@@ -269,6 +269,38 @@ class BERTopicService:
         # บันทึกเป็นไฟล์ HTML
         fig.write_html(output_path)
         print(f"Successfully saved 3D scatter plot to {output_path}")
+    
+    def export_ground_truth_scatter_3d(self, output_path, true_labels_list):
+        """สร้าง 3D Scatter Plot โดยลงสีตามเฉลย (Ground Truth)"""
+        if self.probs is None: return
+        print("Running UMAP for Ground Truth 3D visualization...")
+        
+        # random_state=42
+        reducer = umap_learn.UMAP(n_components=3, random_state=42, metric='cosine')
+        embedding = reducer.fit_transform(self.probs)
+        
+        # DataFrame
+        df = pd.DataFrame({
+            'UMAP_1': embedding[:, 0], 
+            'UMAP_2': embedding[:, 1], 
+            'UMAP_3': embedding[:, 2], 
+            'Ground Truth': true_labels_list # Label 
+        })
+        
+        # Plotly 3D Scatter Plot
+        fig = px.scatter_3d(
+            df, x='UMAP_1', y='UMAP_2', z='UMAP_3',
+            color='Ground Truth',
+            title='Document Clusters (Colored by Ground Truth Labels)',
+            opacity=0.8,
+            color_discrete_sequence=px.colors.qualitative.Plotly # Colur from Plotly
+        )
+        
+        fig.update_traces(marker=dict(size=4, line=dict(width=0.5, color='white')))
+        fig.update_layout(legend=dict(itemsizing='constant'))
+        
+        fig.write_html(output_path)
+        print(f"Successfully saved Ground Truth 3D scatter plot to {output_path}")
 
     def export_bertopic_html(self, output_prefix):
         if self.topic_model is None: return
