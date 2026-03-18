@@ -14,13 +14,18 @@ export default function PaperSearch() {
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
   // Fetch From API
-  const fetchPapers = async () => {
+  const fetchPapers = async (overrideDomain?: string) => {
     setLoading(true);
+
+    // ถ้ามีค่าส่งเข้ามา ให้ใช้ค่านั้น ถ้าไม่มีให้ใช้ selectedDomain ใน State
+    const activeDomain =
+      overrideDomain !== undefined ? overrideDomain : selectedDomain;
+
     try {
       const response = await api.get("/papers/", {
         params: {
           q: searchQuery || undefined,
-          domain: selectedDomain || undefined,
+          domain: activeDomain || undefined,
         },
       });
       setPapers(response.data);
@@ -101,9 +106,9 @@ export default function PaperSearch() {
             className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg appearance-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             value={selectedDomain}
             onChange={(e) => {
-              setSelectedDomain(e.target.value);
-              // When changing the dropdown menu, immediately make a new API call without waiting for Enter.
-              setTimeout(fetchPapers, 100);
+              const newValue = e.target.value;
+              setSelectedDomain(newValue); // อัปเดต State ไว้โชว์บนหน้าจอ
+              fetchPapers(newValue); // เรียก API โดยใช้ค่าใหม่ทันที! ไม่ต้องรอ State
             }}
           >
             <option value="">All Domains</option>
@@ -119,13 +124,6 @@ export default function PaperSearch() {
             {/* Domain Option */}
           </select>
         </div>
-
-        <button
-          onClick={fetchPapers}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-        >
-          Search
-        </button>
       </div>
 
       {/* Table display area */}

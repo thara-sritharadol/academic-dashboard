@@ -5,43 +5,48 @@ from django.db.models import Count, Q
 from .models import Paper, Author
 from .serializers import PaperListSerializer, PaperDetailSerializer, AuthorSerializer
 from collections import defaultdict
-from rest_framework.decorators import api_view, permission_classes # เพิ่ม permission_classes
-from rest_framework.permissions import AllowAny # เพิ่ม AllowAny
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 # API for Paper (Search & Detail) ---
+
 class PaperViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    API สำหรับดึงข้อมูล Paper
-    - List: ใช้ PaperListSerializer (ข้อมูลเบา)
-    - Retrieve (ดูรายตัว): ใช้ PaperDetailSerializer (ข้อมูลเต็ม)
-    """
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return PaperDetailSerializer
         return PaperListSerializer
 
     def get_queryset(self):
-        # ใช้ prefetch_related เพื่อลดจำนวน Query ลง Database (เพิ่มความเร็ว)
         queryset = Paper.objects.all().prefetch_related('authors')
         
-        # รับค่าจากช่อง Search Bar และ Filter ฝั่ง Frontend
         q = self.request.query_params.get('q', None)
         year = self.request.query_params.get('year', None)
         domain = self.request.query_params.get('domain', None)
         cluster_id = self.request.query_params.get('cluster_id', None)
 
         if q:
-            # ค้นหาคำใน Title หรือ Abstract
             queryset = queryset.filter(Q(title__icontains=q) | Q(abstract__icontains=q))
         if year:
             queryset = queryset.filter(year=year)
+            
         if domain:
-            # ค้นหาเปเปอร์ที่มี Domain นี้อยู่ใน predicted_multi_labels
-            queryset = queryset.filter(predicted_multi_labels__contains=domain)
+            # ตัดประโยคเอาแค่คำหน้าสุด (เช่น จาก "Topic 3: stroke..." กลายเป็น "Topic 3")
+            domain_prefix = domain.split(':')[0].strip()
+            
+            matching_ids = []
+            for paper in queryset:
+                if paper.predicted_multi_labels:
+                    # วนลูปเช็คว่ามี Label ไหนในเปเปอร์ที่ "ขึ้นต้นด้วย" คำว่า Topic 3 ไหม
+                    has_match = any(label.startswith(domain_prefix) for label in paper.predicted_multi_labels)
+                    if has_match:
+                        matching_ids.append(paper.id)
+                        
+            # สั่ง Filter QuerySet ด้วย ID ที่ตรงเงื่อนไข
+            queryset = queryset.filter(id__in=matching_ids)
+            
         if cluster_id:
             queryset = queryset.filter(cluster_id=cluster_id)
             
-        # เรียงลำดับตามปีล่าสุด หรือ ยอด Citation สูงสุด
         return queryset.order_by('-year', '-citation_count')
 
 
@@ -114,36 +119,48 @@ def get_all_topics(request):
     # เรียงตามตัวอักษรให้สวยงาม
     return Response(sorted(topic_list))
 
+# views.py (อัปเดตฟังก์ชัน author_network)
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def author_network(request):
-    """
-    Create Node and Link data to plot a collaboration network graph.
-    Limit to the top 100 most recent papers to avoid making the graph cluttered and heavy.
-    """
-    limit = int(request.query_params.get('limit', 100))
-    papers = Paper.objects.prefetch_related('authors').order_by('-year')[:limit]
+    limit = int(request.query_params.get('limit', 200))
+    domain = request.query_params.get('domain', None)
     
+    # 1. ดึงเปเปอร์ทั้งหมดมาก่อน (เรียงตามปีล่าสุด)
+    papers_query = Paper.objects.prefetch_related('authors').order_by('-year')
+    
+    # 2. กรองข้อมูลผ่าน Python เพื่อหลีกเลี่ยง Error ของ SQLite JSONField
+    papers = []
+    if domain:
+        for p in papers_query:
+            # เช็คว่ามี domain ใน list ของ predicted_multi_labels หรือไม่
+            if p.predicted_multi_labels and domain in p.predicted_multi_labels:
+                papers.append(p)
+                if len(papers) >= limit: # ได้ครบตาม limit แล้วหยุดเลย จะได้ไม่กินเมมโมรี่
+                    break
+    else:
+        # ถ้าไม่ได้ฟิลเตอร์ ก็ตัดมาแค่จำนวน limit ได้เลย
+        papers = papers_query[:limit]
+        
     nodes_dict = {}
     links_dict = defaultdict(int)
     
     for paper in papers:
         authors = list(paper.authors.all())
-        # สร้าง Nodes
         for author in authors:
             if author.id not in nodes_dict:
                 nodes_dict[author.id] = {
                     "id": str(author.id),
                     "name": author.name,
-                    "val": 1 # ขนาดของ Node (จะบวกเพิ่มถ้าเจอซ้ำ)
+                    "val": 1,
+                    "group": paper.cluster_label if paper.cluster_label else "Unknown"
                 }
             else:
                 nodes_dict[author.id]["val"] += 1
                 
-        # สร้าง Links (จับคู่ผู้แต่งทุกคนในเปเปอร์เดียวกัน)
         for i in range(len(authors)):
             for j in range(i + 1, len(authors)):
-                # เรียง ID เพื่อไม่ให้เกิด Link ซ้ำไปกลับ (A->B กับ B->A)
                 a1, a2 = sorted([authors[i].id, authors[j].id])
                 link_key = f"{a1}-{a2}"
                 links_dict[link_key] += 1
@@ -151,7 +168,4 @@ def author_network(request):
     nodes = list(nodes_dict.values())
     links = [{"source": str(k.split('-')[0]), "target": str(k.split('-')[1]), "weight": v} for k, v in links_dict.items()]
     
-    return Response({
-        "nodes": nodes,
-        "links": links
-    })
+    return Response({"nodes": nodes, "links": links})

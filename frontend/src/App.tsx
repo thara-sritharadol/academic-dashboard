@@ -1,15 +1,8 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import DashboardOverview from "./pages/DashboardOverview";
 import PaperSearch from "./pages/PaperSearch";
-
-// Mock
-const AuthorNetwork = () => (
-  <div className="p-8">
-    <h2 className="text-2xl font-bold">Author Network</h2>
-  </div>
-);
+import AuthorNetwork from "./pages/AuthorNetwork";
 
 function App() {
   return (
