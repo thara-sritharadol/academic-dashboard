@@ -16,5 +16,6 @@ urlpatterns = [
     # เช่น /api/analytics/summary/
     path('analytics/summary/', views.dashboard_summary, name='dashboard-summary'),
     path('analytics/domain-trends/', views.domain_trends, name='domain-trends'),
+    path('analytics/topics/', views.get_all_topics, name='all-topics'),
     path('network/authors/', views.author_network, name='author-network'),
 ]

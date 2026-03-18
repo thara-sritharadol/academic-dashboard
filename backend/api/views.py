@@ -5,6 +5,8 @@ from django.db.models import Count, Q
 from .models import Paper, Author
 from .serializers import PaperListSerializer, PaperDetailSerializer, AuthorSerializer
 from collections import defaultdict
+from rest_framework.decorators import api_view, permission_classes # เพิ่ม permission_classes
+from rest_framework.permissions import AllowAny # เพิ่ม AllowAny
 
 # API for Paper (Search & Detail) ---
 class PaperViewSet(viewsets.ReadOnlyModelViewSet):
@@ -63,8 +65,9 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
 # --- 3. API สำหรับ Analytics & Dashboard ---
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def dashboard_summary(request):
-    """ส่งตัวเลขสถิติภาพรวมไปโชว์ใน Card ด้านบนของ Dashboard"""
+    """Send the overall statistics to be displayed in a card at the top of the Dashboard."""
     total_papers = Paper.objects.count()
     total_authors = Author.objects.count()
     # นับจำนวน Topic Cluster ที่หาเจอ (ไม่รวมค่าว่าง)
@@ -77,16 +80,17 @@ def dashboard_summary(request):
     })
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def domain_trends(request):
-    """ดึงจำนวน Paper แยกตามปีและโดเมนหลัก (เพื่อนำไปพล็อต Line Chart)"""
-    # ดึงข้อมูลมาเฉพาะเปเปอร์ที่มีปีและมี Cluster Label
+    """Extract the number of papers broken down by year and major domain (for plotting a line chart)."""
+    # Extract only papers that include a year and a Cluster Label.
     papers = Paper.objects.exclude(year__isnull=True).exclude(cluster_label__isnull=True)
     
-    # นับจำนวน (Group By Year, Cluster_Label)
+    # Count the number (Group By Year, Cluster_Label)
     data = papers.values('year', 'cluster_label').annotate(count=Count('id')).order_by('year')
     
-    # จัด Format ให้ Frontend นำไปใช้กับ Recharts / ECharts ได้ง่ายๆ
-    # รูปแบบ: [ {"year": 2020, "Mathematics": 15, "Computer science": 20}, ... ]
+    # Format the chart so the frontend can easily use it with Recharts/ECharts.
+    # [ {"year": 2020, "Mathematics": 15, "Computer science": 20}, ... ]
     trend_dict = defaultdict(dict)
     for item in data:
         y = item['year']
@@ -98,10 +102,24 @@ def domain_trends(request):
     return Response(result)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
+def get_all_topics(request):
+    """API สำหรับดึงรายชื่อ Topic/Domain ทั้งหมดที่ไม่ซ้ำกัน นำไปทำ Dropdown Filter"""
+    # ดึง cluster_label ที่ไม่เป็นค่าว่าง และเอาเฉพาะค่าที่ไม่ซ้ำกัน (distinct)
+    topics = Paper.objects.exclude(cluster_label__isnull=True).values_list('cluster_label', flat=True).distinct()
+    
+    # กรองเอาเฉพาะชื่อที่ไม่ใช่ "Outlier / Noise" (ถ้าไม่อยากให้คนค้นหา Outlier)
+    topic_list = [t for t in topics if t != "Outlier / Noise"]
+    
+    # เรียงตามตัวอักษรให้สวยงาม
+    return Response(sorted(topic_list))
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
 def author_network(request):
     """
-    สร้างข้อมูล Node และ Links เพื่อวาดกราฟเครือข่ายความร่วมมือ
-    จำกัดเฉพาะ Top 100 Paper ล่าสุดเพื่อไม่ให้กราฟรกและหนักเกินไป
+    Create Node and Link data to plot a collaboration network graph.
+    Limit to the top 100 most recent papers to avoid making the graph cluttered and heavy.
     """
     limit = int(request.query_params.get('limit', 100))
     papers = Paper.objects.prefetch_related('authors').order_by('-year')[:limit]

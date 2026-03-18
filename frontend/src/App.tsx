@@ -2,13 +2,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import DashboardOverview from "./pages/DashboardOverview";
+import PaperSearch from "./pages/PaperSearch";
 
 // Mock
-const PaperSearch = () => (
-  <div className="p-8">
-    <h2 className="text-2xl font-bold">Search Papers</h2>
-  </div>
-);
 const AuthorNetwork = () => (
   <div className="p-8">
     <h2 className="text-2xl font-bold">Author Network</h2>
