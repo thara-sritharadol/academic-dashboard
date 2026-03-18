@@ -40,7 +40,7 @@ class Command(BaseCommand):
         if not texts:
             raise CommandError("No text data found in the dataset.")
 
-        #Spacy และ Custom Stop Words ---
+        #Spacy and Custom Stop Words ---
         self.stdout.write("Loading Spacy 'en_core_web_sm'...")
         try:
             nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
@@ -66,14 +66,14 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Loaded {len(texts)} papers. Preparing CountVectorizer with Spacy..."))
 
-        # --- 1. เตรียมข้อมูลสำหรับ LDA (ใช้ CountVectorizer + Spacy) ---
+        # Prepare data for LDA (using CountVectorizer + Spacy)
         vectorizer = CountVectorizer(tokenizer=spacy_tokenizer, max_df=0.90, min_df=5)
         doc_matrix = vectorizer.fit_transform(texts)
         feature_names = vectorizer.get_feature_names_out()
 
-        # --- 2. เตรียมข้อมูลสำหรับ Coherence (Gensim) ---
+        # Prepare the data for Coherence (Gensim)
         self.stdout.write("Tokenizing texts for Gensim Coherence Model using Spacy...")
-        # ใช้ spacy_tokenizer โดยตรง เพื่อให้มั่นใจว่า Gensim และ Sklearn เห็นคำศัพท์ชุดเดียวกัน
+        # Use spacy_tokenizer directly to ensure that Gensim and Sklearn see the same set of vocabulary.
         tokenized_texts = [spacy_tokenizer(text) for text in texts]
         dictionary = Dictionary(tokenized_texts)
 
@@ -83,22 +83,22 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.NOTICE(f"Starting Grid Search for LDA (K={start_k} to {end_k})..."))
 
-        # --- 3. วนลูปหาค่า K ---
+        # Loop to find the value of K
         with tqdm(total=len(k_values), desc="Tuning LDA", dynamic_ncols=True) as pbar:
             for k in k_values:
                 lda_model = LatentDirichletAllocation(n_components=k, random_state=42, max_iter=20)
                 lda_model.fit(doc_matrix)
                 
-                # เก็บค่า Perplexity (ยิ่งน้อยยิ่งดี)
+                # Perplexity
                 perplexity_scores.append(lda_model.perplexity(doc_matrix))
 
-                # ดึง Top 10 words ของแต่ละ Topic
+                # pull Top 10 words each Topic
                 top_words_per_topic = []
                 for topic in lda_model.components_:
                     top_features_ind = topic.argsort()[: -10 - 1 : -1]
                     top_words_per_topic.append([feature_names[i] for i in top_features_ind])
 
-                # คำนวณ Topic Coherence (C_v) ด้วย Gensim (ยิ่งมากยิ่งดี)
+                # Topic Coherence (C_v) with Gensim
                 cm = CoherenceModel(
                     topics=top_words_per_topic, 
                     texts=tokenized_texts, 
@@ -109,7 +109,7 @@ class Command(BaseCommand):
                 
                 pbar.update(1)
 
-        # --- 4. พล็อตกราฟ 2 แกน (Dual-axis) ---
+        # Plotting a graph with two axes (Dual-axis)
         fig, ax1 = plt.subplots(figsize=(10, 6))
 
         color = 'tab:red'

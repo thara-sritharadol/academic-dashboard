@@ -10,7 +10,6 @@ class Command(BaseCommand):
         parser.add_argument('--threshold', type=float, default=0.3, help='Minimum score for a concept')
         parser.add_argument('--target_labels', nargs='+', default=['Mathematics', 'Computer science'], help='List of target Level 0 labels')
         
-        # --- ปรับค่าเริ่มต้น min_match เป็น 1 และเพิ่มเงื่อนไขใหม่ ---
         parser.add_argument('--min_match', type=int, default=1, help='Minimum number of target labels (1 for single+multi, 2 for multi only)')
         parser.add_argument('--max_match', type=int, default=None, help='Maximum number of target labels (e.g., 1 for strictly single label)')
         parser.add_argument('--strict_domain', action='store_true', help='If set, the paper must NOT contain any labels outside the target_labels')
@@ -29,7 +28,7 @@ class Command(BaseCommand):
         
         dataset = []
 
-        # ฟังก์ชันหา Concept ที่ได้คะแนนสูงสุดตัวเดียว
+        # Function to find the single highest-scoring concept.
         def get_top_concept(concepts, level):
             level_concepts = [c for c in concepts if c.get('level') == level]
             if not level_concepts:
@@ -37,7 +36,7 @@ class Command(BaseCommand):
             level_concepts.sort(key=lambda x: x.get('score', 0), reverse=True)
             return level_concepts[0]['name']
 
-        # ฟังก์ชันดึงทุก Concept ที่คะแนนผ่านเกณฑ์
+        # The function retrieves all concepts that meet the passing score criteria.
         def get_multi_labels(concepts, level, thresh):
             return [c['name'] for c in concepts if c.get('level') == level and c.get('score', 0) >= thresh]
 
@@ -81,15 +80,15 @@ class Command(BaseCommand):
 
             paper_labels = set(multi_l0)
 
-            # 1. เช็คจำนวนที่ Match กับ Target ที่ต้องการ
+            # Check the quantity that matches the desired target.
             match_count = len(paper_labels.intersection(target_labels))
             
-            # 2. เช็คเงื่อนไข Strict Domain (ถ้าเปิดไว้ ห้ามมี Label อื่นที่ไม่ใช่ Target ปะปนมา)
+            # Check the Strict Domain condition (if enabled, no labels other than Target are allowed).
             is_strict_pass = True
             if strict_domain:
                 is_strict_pass = paper_labels.issubset(target_labels)
 
-            # 3. ตรวจสอบเงื่อนไขทั้งหมดก่อนบันทึกลง Dataset
+            # Check all conditions before saving to the dataset.
             if match_count >= min_match and is_strict_pass:
                 if max_match is None or match_count <= max_match:
                     dataset.append(paper_data)

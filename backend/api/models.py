@@ -7,7 +7,7 @@ class Author(models.Model):
     primary_cluster = models.CharField(max_length=255, null=True, blank=True)
     topic_profile = models.JSONField(null=True, blank=True)
     faculty = models.CharField(max_length=255, null=True, blank=True)
-    department = models.CharField(max_length=266, null=True, blank=True)
+    department = models.CharField(max_length=255, null=True, blank=True) # ปรับเป็น 255 ให้มาตรฐาน
 
     def __str__(self):
         return self.name
@@ -15,7 +15,6 @@ class Author(models.Model):
 class Paper(models.Model):
     title = models.TextField()
     authors_text = models.TextField(null=True, blank=True) 
-    
     authors = models.ManyToManyField(Author, related_name="papers")
     
     year = models.IntegerField(null=True, blank=True)
@@ -28,15 +27,13 @@ class Paper(models.Model):
 
     openalex_concepts = models.JSONField(null=True, blank=True, help_text="List of concepts from OpenAlex")
 
-    cluster_id = models.IntegerField(null=True, blank=True, db_index=True) # เก็บเลขกลุ่ม เช่น 0, 1, 2
-
-    openalex_concepts = models.JSONField(null=True, blank=True, help_text="List of concepts from OpenAlex")
+    cluster_id = models.IntegerField(null=True, blank=True, db_index=True)
     cluster_label = models.CharField(max_length=255, null=True, blank=True)
-
+    
+    predicted_multi_labels = models.JSONField(null=True, blank=True, help_text="List of predicted labels")
+    
     topic_distribution = models.JSONField(null=True, blank=True)
-
     entropy = models.FloatField(null=True, blank=True, db_index=True)
 
     def __str__(self):
         return f"({self.id}) {self.title}"
-    

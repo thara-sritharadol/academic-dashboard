@@ -40,7 +40,7 @@ class Command(BaseCommand):
         if not texts:
             raise CommandError("No text data found in the dataset.")
 
-        # --- 0. ตั้งค่า Spacy และ Custom Stop Words ---
+        # Set up Spacy and Custom Stop Words ---
         self.stdout.write("Loading Spacy 'en_core_web_sm'...")
         try:
             nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
@@ -66,12 +66,12 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Loaded {len(texts)} papers. Preparing TF-IDF Vectorizer with Spacy..."))
 
-        # --- 1. เตรียมข้อมูลสำหรับ NMF (ใช้ TfidfVectorizer + Spacy) ---
+        # Prepare data for NMF (using TfidfVectorizer + Spacy)
         vectorizer = TfidfVectorizer(tokenizer=spacy_tokenizer, max_df=0.90, min_df=5)
         tfidf_matrix = vectorizer.fit_transform(texts)
         feature_names = vectorizer.get_feature_names_out()
 
-        # --- 2. เตรียมข้อมูลสำหรับ Coherence (Gensim) ---
+        # Coherence (Gensim)
         self.stdout.write("Tokenizing texts for Gensim Coherence Model using Spacy...")
         tokenized_texts = [spacy_tokenizer(text) for text in texts]
         dictionary = Dictionary(tokenized_texts)
@@ -82,16 +82,16 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.NOTICE(f"Starting Grid Search for NMF (K={start_k} to {end_k})..."))
 
-        # --- 3. วนลูปหาค่า K ---
+        # Loop to find the value of K ---
         with tqdm(total=len(k_values), desc="Tuning NMF", dynamic_ncols=True) as pbar:
             for k in k_values:
                 nmf_model = NMF(n_components=k, random_state=42, max_iter=500)
                 nmf_model.fit(tfidf_matrix)
                 
-                # เก็บค่า Reconstruction Error
+                # Reconstruction Error
                 reconstruction_errors.append(nmf_model.reconstruction_err_)
 
-                # ดึง Top 10 words
+                # Top 10 words
                 top_words_per_topic = []
                 for topic in nmf_model.components_:
                     top_features_ind = topic.argsort()[: -10 - 1 : -1]
@@ -107,7 +107,7 @@ class Command(BaseCommand):
                 
                 pbar.update(1)
 
-        # --- 4. พล็อตกราฟ (Dual-axis) ---
+        # Dual-axis
         fig, ax1 = plt.subplots(figsize=(10, 6))
 
         color = 'tab:red'

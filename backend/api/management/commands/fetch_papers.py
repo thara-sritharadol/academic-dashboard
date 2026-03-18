@@ -98,7 +98,7 @@ class Command(BaseCommand):
                     if overwrite:
                         updated_count += 1
                 
-                # 2Handle Many-to-Many Authors
+                # Handle Many-to-Many Authors
                 if overwrite:
                     paper_obj.authors.clear()
 
@@ -146,12 +146,12 @@ class Command(BaseCommand):
                             for c in data.get('concepts', [])
                         ]
                         
-                        # บันทึก concepts ลง Database ทันที
+                        # Save the concepts to the database immediately.
                         paper_obj.openalex_concepts = concepts
                         paper_obj.save(update_fields=['openalex_concepts'])
                         
                 except Exception as e:
-                    # ปริ้นท์ error ไว้ข้างล่าง progress bar
+                    # Print the error message below the progress bar.
                     tqdm.write(f"\nError fetching concepts for {doi}: {str(e)}")
 
                 # Sleep
