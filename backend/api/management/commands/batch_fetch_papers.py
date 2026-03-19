@@ -25,7 +25,7 @@ class Command(BaseCommand):
         force_refresh = options.get("force_refresh")
 
         # Queue Logic
-        queryset = Author.objects.all()
+        queryset = Author.objects.exclude(faculty__isnull=True).exclude(faculty__exact="")
         
         if faculty_filter:
             queryset = queryset.filter(faculty__icontains=faculty_filter)
