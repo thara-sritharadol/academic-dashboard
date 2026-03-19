@@ -1,4 +1,3 @@
-// src/pages/DashboardOverview.tsx
 import { useState, useEffect, useMemo } from "react";
 import { FileText, Users, Layers, CheckSquare, Square } from "lucide-react";
 import {
@@ -49,15 +48,14 @@ export default function DashboardOverview() {
     );
 
     return allKeys.map((key) => {
-      // แยกชื่อ Topic 0 กับ Keywords ออกจากกัน (ถ้ามีเครื่องหมาย :)
+      // Separate the Topic name from the name (if there are :) symbols).
       const parts = key.split(":");
       const shortName = parts[0].trim();
-      const keywords = parts.length > 1 ? parts.slice(1).join(":").trim() : "";
-      return { fullKey: key, shortName, keywords };
+      const name = parts.length > 1 ? parts.slice(1).join(":").trim() : "";
+      return { fullKey: key, shortName, names: name };
     });
   }, [trends]);
 
-  // ตั้งค่าเริ่มต้นให้แสดงแค่ 5 Topic แรกก่อน จะได้ไม่รก
   useEffect(() => {
     if (domainInfo.length > 0 && selectedDomains.length === 0) {
       setSelectedDomains(domainInfo.slice(0, 5).map((d) => d.fullKey));
@@ -87,7 +85,6 @@ export default function DashboardOverview() {
     "#334155",
   ];
 
-  // ฟังก์ชันสลับการเปิด/ปิด Topic
   const toggleDomain = (domainKey: string) => {
     setSelectedDomains((prev) =>
       prev.includes(domainKey)
@@ -143,9 +140,9 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* กราฟและแผงควบคุม */}
+      {/* Graph and Comtroller */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* ส่วนซ้าย: กราฟเส้น */}
+        {/* Line */}
         <div className="lg:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
           <h2 className="text-lg font-bold mb-6">
             Domain Publications Over Time
@@ -177,19 +174,19 @@ export default function DashboardOverview() {
                   />
                   <Legend wrapperStyle={{ paddingTop: "20px" }} />
 
-                  {/* วาดเส้นเฉพาะ Topic ที่ถูกเลือกใน selectedDomains */}
+                  {/* Draw lines only on the selected Topics in selectedDomains. */}
                   {domainInfo
                     .filter((d) => selectedDomains.includes(d.fullKey))
                     .map((domain, index) => {
-                      // หา index สีที่ตรงกับตอนแรก เพื่อให้สีไม่เปลี่ยนไปมาตอนสลับ Filter
+                      // Find the color index that matches the initial color, so that the color doesn't change when switching filters.
                       const colorIndex = domainInfo.findIndex(
                         (d) => d.fullKey === domain.fullKey,
                       );
                       return (
                         <Line
                           key={domain.fullKey}
-                          name={domain.shortName} // ใช้ชื่อย่อแสดงใน Legend และ Tooltip
-                          dataKey={domain.fullKey} // แต่ดึงข้อมูลจาก Key เต็ม
+                          name={domain.shortName}
+                          dataKey={domain.fullKey}
                           type="monotone"
                           stroke={colors[colorIndex % colors.length]}
                           strokeWidth={3}
@@ -208,7 +205,7 @@ export default function DashboardOverview() {
           </div>
         </div>
 
-        {/* ส่วนขวา: แผงควบคุม (Filter & Dictionary) */}
+        {/* Filter & Dictionary */}
         <div className="lg:col-span-1 bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col h-[530px]">
           <h2 className="text-sm font-bold text-slate-700 mb-3 px-2 uppercase tracking-wider">
             Filter Topics ({selectedDomains.length}/{domainInfo.length})
@@ -243,9 +240,9 @@ export default function DashboardOverview() {
                       ></span>
                       {domain.shortName}
                     </div>
-                    {domain.keywords && (
+                    {domain.names && (
                       <div className="text-xs text-slate-500 mt-1 line-clamp-2 leading-tight">
-                        {domain.keywords}
+                        {domain.names}
                       </div>
                     )}
                   </div>
@@ -253,7 +250,7 @@ export default function DashboardOverview() {
               );
             })}
           </div>
-          {/* ปุ่มตัวช่วยเคลียร์/เลือกทั้งหมด */}
+
           <div className="pt-3 mt-2 border-t border-slate-100 flex gap-2">
             <button
               onClick={() =>

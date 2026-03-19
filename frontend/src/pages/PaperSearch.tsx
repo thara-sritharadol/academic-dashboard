@@ -17,7 +17,7 @@ export default function PaperSearch() {
   const fetchPapers = async (overrideDomain?: string) => {
     setLoading(true);
 
-    // ถ้ามีค่าส่งเข้ามา ให้ใช้ค่านั้น ถ้าไม่มีให้ใช้ selectedDomain ใน State
+    // If a value is entered, use that value. If not, use selectedDomain in State.
     const activeDomain =
       overrideDomain !== undefined ? overrideDomain : selectedDomain;
 
@@ -40,13 +40,13 @@ export default function PaperSearch() {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // ยิง API ดึงทั้งรายชื่อเปเปอร์และรายชื่อโดเมนพร้อมกัน
+        // API call to retrieve both a list of papers and a list of domains simultaneously.
         const [papersRes, topicsRes] = await Promise.all([
           api.get("/papers/"),
           api.get("/analytics/topics/"),
         ]);
         setPapers(papersRes.data);
-        setAvailableDomains(topicsRes.data); // เก็บรายชื่อ Domain ลง State
+        setAvailableDomains(topicsRes.data); // Store the domain list in the State.
       } catch (error) {
         console.error("Error fetching initial data:", error);
       } finally {
@@ -107,14 +107,14 @@ export default function PaperSearch() {
             value={selectedDomain}
             onChange={(e) => {
               const newValue = e.target.value;
-              setSelectedDomain(newValue); // อัปเดต State ไว้โชว์บนหน้าจอ
-              fetchPapers(newValue); // เรียก API โดยใช้ค่าใหม่ทันที! ไม่ต้องรอ State
+              setSelectedDomain(newValue); // Update the State to show on the screen.
+              fetchPapers(newValue); // Call the API using the new value immediately! No need to wait for State.
             }}
           >
             <option value="">All Domains</option>
             {availableDomains.map((domainStr) => {
-              // ดึงแค่ชื่อ Topic สั้นๆ มาโชว์ใน Dropdown เช่น "Topic 0" หรือถ้าอยากโชว์เต็มๆ ก็ใช้ domainStr ได้เลย
-              const shortName = domainStr.split(":")[0];
+              // Use Topic Name LLM
+              const shortName = domainStr.split(":")[1];
               return (
                 <option key={domainStr} value={domainStr}>
                   {shortName}
@@ -215,7 +215,7 @@ export default function PaperSearch() {
                               key={idx}
                               className={`px-2.5 py-1 inline-flex text-[11px] leading-4 font-semibold rounded-full border ${colorClass}`}
                             >
-                              {label.split(":")[0]} {/* Topic */}
+                              {label.split(":")[1]} {/* Topic */}
                             </span>
                           );
                         })}

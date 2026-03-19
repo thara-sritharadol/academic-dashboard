@@ -8,7 +8,7 @@ from collections import defaultdict
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 
-# API for Paper (Search & Detail) ---
+# API for Paper (Search & Detail)
 
 class PaperViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
@@ -30,18 +30,18 @@ class PaperViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(year=year)
             
         if domain:
-            # ตัดประโยคเอาแค่คำหน้าสุด (เช่น จาก "Topic 3: stroke..." กลายเป็น "Topic 3")
+            # Cut a sentence and take only the first word (e.g., from "Topic 3: stroke..." to "Topic 3").
             domain_prefix = domain.split(':')[0].strip()
             
             matching_ids = []
             for paper in queryset:
                 if paper.predicted_multi_labels:
-                    # วนลูปเช็คว่ามี Label ไหนในเปเปอร์ที่ "ขึ้นต้นด้วย" คำว่า Topic 3 ไหม
+                    # Loop through and check if there are any labels in the paper that "begin with" the words "Topic 3".
                     has_match = any(label.startswith(domain_prefix) for label in paper.predicted_multi_labels)
                     if has_match:
                         matching_ids.append(paper.id)
                         
-            # สั่ง Filter QuerySet ด้วย ID ที่ตรงเงื่อนไข
+            # Filter the QuerySet using the ID that matches the condition.
             queryset = queryset.filter(id__in=matching_ids)
             
         if cluster_id:
@@ -50,10 +50,10 @@ class PaperViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset.order_by('-year', '-citation_count')
 
 
-# --- 2. API สำหรับ Author Profile ---
+# API for Author Profile
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API สำหรับดึงข้อมูล Author
+    API for Author
     """
     queryset = Author.objects.all().prefetch_related('papers')
     serializer_class = AuthorSerializer
@@ -63,11 +63,11 @@ class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
         q = self.request.query_params.get('q', None)
         if q:
             queryset = queryset.filter(name__icontains=q)
-        # เรียงตามจำนวนเปเปอร์ (ถ้ามี Field เก็บไว้) หรือดึงตัวหลักๆ ขึ้นมาก่อน
+        # Sort by the number of papers (if a field is saved) or bring up the most important ones first.
         return queryset
 
 
-# --- 3. API สำหรับ Analytics & Dashboard ---
+# API สำหรับ Analytics & Dashboard
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
@@ -75,7 +75,7 @@ def dashboard_summary(request):
     """Send the overall statistics to be displayed in a card at the top of the Dashboard."""
     total_papers = Paper.objects.count()
     total_authors = Author.objects.count()
-    # นับจำนวน Topic Cluster ที่หาเจอ (ไม่รวมค่าว่าง)
+    # Count the number of Topic Clusters found (excluding empty ones).
     total_clusters = Paper.objects.exclude(cluster_label__isnull=True).values('cluster_label').distinct().count()
     
     return Response({
@@ -109,38 +109,42 @@ def domain_trends(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_all_topics(request):
-    """API สำหรับดึงรายชื่อ Topic/Domain ทั้งหมดที่ไม่ซ้ำกัน นำไปทำ Dropdown Filter"""
-    # ดึง cluster_label ที่ไม่เป็นค่าว่าง และเอาเฉพาะค่าที่ไม่ซ้ำกัน (distinct)
+    """An API for retrieving a list of all unique topics/domains to create a dropdown filter."""
+    # Extract non-empty cluster_label values ​​and select only unique (distinct) values.
     topics = Paper.objects.exclude(cluster_label__isnull=True).values_list('cluster_label', flat=True).distinct()
     
-    # กรองเอาเฉพาะชื่อที่ไม่ใช่ "Outlier / Noise" (ถ้าไม่อยากให้คนค้นหา Outlier)
+    # Filter out only names that are not "Outlier / Noise" (if you don't want people to search for Outlier).
     topic_list = [t for t in topics if t != "Outlier / Noise"]
     
-    # เรียงตามตัวอักษรให้สวยงาม
+    # Arrange them neatly in alphabetical order.
     return Response(sorted(topic_list))
-
-# views.py (อัปเดตฟังก์ชัน author_network)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def author_network(request):
     limit = int(request.query_params.get('limit', 200))
-    domain = request.query_params.get('domain', None)
+    # Change to accepting parameters named 'domains'.
+    domains_param = request.query_params.get('domains', None) 
     
-    # 1. ดึงเปเปอร์ทั้งหมดมาก่อน (เรียงตามปีล่าสุด)
     papers_query = Paper.objects.prefetch_related('authors').order_by('-year')
     
-    # 2. กรองข้อมูลผ่าน Python เพื่อหลีกเลี่ยง Error ของ SQLite JSONField
     papers = []
-    if domain:
+    if domains_param:
+        # Slice the string using commas and cut out only the words "Topic X".
+        selected_prefixes = [d.split(':')[0].strip() for d in domains_param.split(',')]
+        
         for p in papers_query:
-            # เช็คว่ามี domain ใน list ของ predicted_multi_labels หรือไม่
-            if p.predicted_multi_labels and domain in p.predicted_multi_labels:
-                papers.append(p)
-                if len(papers) >= limit: # ได้ครบตาม limit แล้วหยุดเลย จะได้ไม่กินเมมโมรี่
-                    break
+            if p.predicted_multi_labels:
+                # Check if this paper has any labels that match one of the topics we've selected.
+                has_match = any(
+                    any(label.startswith(prefix) for prefix in selected_prefixes) 
+                    for label in p.predicted_multi_labels
+                )
+                if has_match:
+                    papers.append(p)
+                    if len(papers) >= limit:
+                        break
     else:
-        # ถ้าไม่ได้ฟิลเตอร์ ก็ตัดมาแค่จำนวน limit ได้เลย
         papers = papers_query[:limit]
         
     nodes_dict = {}
@@ -148,23 +152,27 @@ def author_network(request):
     
     for paper in papers:
         authors = list(paper.authors.all())
+        
+        # Loop through the nodes and put the faculties in the same location.
         for author in authors:
             if author.id not in nodes_dict:
                 nodes_dict[author.id] = {
                     "id": str(author.id),
                     "name": author.name,
                     "val": 1,
-                    "group": paper.cluster_label if paper.cluster_label else "Unknown"
+                    "group": paper.cluster_label if paper.cluster_label else "Unknown",
+                    "faculty": author.faculty
                 }
             else:
                 nodes_dict[author.id]["val"] += 1
                 
+        # Links
         for i in range(len(authors)):
             for j in range(i + 1, len(authors)):
                 a1, a2 = sorted([authors[i].id, authors[j].id])
                 link_key = f"{a1}-{a2}"
                 links_dict[link_key] += 1
-                
+
     nodes = list(nodes_dict.values())
     links = [{"source": str(k.split('-')[0]), "target": str(k.split('-')[1]), "weight": v} for k, v in links_dict.items()]
     
