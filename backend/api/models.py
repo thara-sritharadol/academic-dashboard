@@ -37,6 +37,8 @@ class Paper(models.Model):
     cluster_label = models.CharField(max_length=255, null=True, blank=True)
     
     predicted_multi_labels = models.JSONField(null=True, blank=True, help_text="List of predicted labels")
+
+    topic_keywords = models.JSONField(null=True, blank=True, help_text="Raw keywords from BERTopic")
     
     topic_distribution = models.JSONField(null=True, blank=True)
     entropy = models.FloatField(null=True, blank=True, db_index=True)

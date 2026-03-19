@@ -92,7 +92,7 @@ class BERTopicService:
             calculate_probabilities=not self.use_approx_dist,
             nr_topics=self.n_topics if self.n_topics else "auto",
             verbose=True,
-            top_n_words=10
+            top_n_words=15
         )
 
         # 3. ใช้ train_docs แทน documents
