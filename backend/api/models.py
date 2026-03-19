@@ -3,11 +3,17 @@ from django.db import models
 class Author(models.Model):
     openalex_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255)
-    institution = models.CharField(max_length=255, null=True, blank=True)
+
+    faculty = models.CharField(max_length=255, null=True, blank=True)
+    institution = models.CharField(max_length=255, default="Thammasat University")
+    email = models.EmailField(null=True, blank=True)
+
+    last_fetched_papers = models.DateTimeField(null=True, blank=True)
+
     primary_cluster = models.CharField(max_length=255, null=True, blank=True)
     topic_profile = models.JSONField(null=True, blank=True)
     faculty = models.CharField(max_length=255, null=True, blank=True)
-    department = models.CharField(max_length=255, null=True, blank=True) # ปรับเป็น 255 ให้มาตรฐาน
+    department = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
         return self.name
