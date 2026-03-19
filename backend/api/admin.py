@@ -4,7 +4,7 @@ from .models import Paper, Author
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
     list_display = ('name', 'faculty', 'department', 'primary_cluster')
-    search_fields = ('name',)
+    search_fields = ('name', 'faculty')
 
 @admin.register(Paper)
 class paperAdmin(admin.ModelAdmin):

@@ -19,7 +19,7 @@ export default function DashboardOverview() {
   const [trends, setTrends] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State สำหรับเก็บว่าผู้ใช้เลือกดู Topic ไหนอยู่บ้าง
+  // State For Topic
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
 
   useEffect(() => {
@@ -40,8 +40,7 @@ export default function DashboardOverview() {
     fetchDashboardData();
   }, []);
 
-  // --- ประมวลผลชื่อ Topic ---
-  // ใช้ useMemo เพื่อไม่ให้มันคำนวณใหม่ทุกครั้งที่เลือกฟิลเตอร์
+  // useMemo To prevent it from recalculating every time a filter is selected.
   const domainInfo = useMemo(() => {
     if (trends.length === 0) return [];
 
