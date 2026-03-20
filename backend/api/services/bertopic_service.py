@@ -39,13 +39,15 @@ class BERTopicService:
 
     def _setup_stopwords(self):
         academic_stopwords = [
+            'finding', 'findings', 'illustrate', 'significant', 'provide', 'provides', 'potential', 'associated', 'effective', 'aspect', 'aspects', 'challenge', 'challenges',
             'paper', 'study', 'research', 'result', 'results', 'method', 'methodology',
             'proposed', 'propose', 'approach', 'based', 'using', 'used', 'use',
             'analysis', 'model', 'system', 'data', 'application', 'new', 'development',
             'performance', 'conclusion', 'abstract', 'introduction', 'work', 'time',
             'significant', 'shown', 'show', 'demonstrate', 'experiment', 'experimental',
-            'university', 'department', 'author', 'et', 'al', 'figure', 'table',
-            'high', 'low', 'large', 'small', 'different', 'various'
+            'university', 'department', 'author', 'et', 'al', 'figure', 'table', 'show'
+            'high', 'low', 'large', 'small', 'different', 'various', 'property', 'properties', 'increase', 'show', 'effect', 'high', 'activity',
+            'structure', 'compound', 'condition', 'quality', 'entry', 'contain', 'parameter', 'observe', 'report', 'present', 'evaluate'
         ]
         for word in academic_stopwords:
             self.nlp.vocab[word].is_stop = True
@@ -64,12 +66,12 @@ class BERTopicService:
         else:
             print("Mode: calculate_probabilities (HDBSCAN for Confidence Score)")
 
-        # 2. ตัดสินใจว่าจะส่งข้อความแบบไหนให้ Specter 2
+        # Decide what kind of message to send to Model.
         if self.use_lemmatized_input:
             print("Input: Lemmatized Text (Applying Spacy preprocessing before embedding)...")
             train_docs = []
             for doc in documents:
-                # สกัดคำเป็น list แล้วเชื่อมกลับเป็นประโยคด้วยช่องว่าง
+                # Extract the words into a list, then connect them back into sentences using spaces.
                 tokens = self.spacy_tokenizer(doc)
                 train_docs.append(" ".join(tokens))
         else:
@@ -90,18 +92,18 @@ class BERTopicService:
             embedding_model="allenai/specter2_base",
             vectorizer_model=self.vectorizer_model,
             calculate_probabilities=not self.use_approx_dist,
-            nr_topics=self.n_topics if self.n_topics else "auto",
+            nr_topics=self.n_topics if self.n_topics else None,
             verbose=True,
             top_n_words=15
         )
 
-        # 3. ใช้ train_docs แทน documents
+        # Use train_docs instead of documents.
         self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
         if self.use_approx_dist:
             print("Calculating approximate topic distributions (c-TF-IDF)...")
             topic_distr, _ = self.topic_model.approximate_distribution(
-                train_docs, # ใช้ train_docs ในการหา Distribution ด้วย, ค่าที่อาจจะผ่านการ Lemma หรือไม่ผ่าน
+                train_docs, # Use `train_docs` to find the distribution, including values ​​that may or may not pass Lemma.
                 min_similarity=0.01
             )
             
@@ -245,7 +247,7 @@ class BERTopicService:
             
         legend_labels = [cluster_legend_map[cid] for cid in cluster_ids]
 
-        # สร้าง DataFrame สำหรับ 3 มิติ
+        # DataFrame 3D
         df = pd.DataFrame({
             'UMAP_1': embedding[:, 0], 
             'UMAP_2': embedding[:, 1], 
@@ -262,16 +264,13 @@ class BERTopicService:
             color_discrete_sequence=px.colors.qualitative.Alphabet
         )
         
-        # ปรับขนาดจุดให้ดูง่ายขึ้น
         fig.update_traces(marker=dict(size=4, line=dict(width=0.5, color='white')))
-        fig.update_layout(legend=dict(itemsizing='constant')) # ให้ขนาดจุดใน legend คงที่
+        fig.update_layout(legend=dict(itemsizing='constant'))
         
-        # บันทึกเป็นไฟล์ HTML
         fig.write_html(output_path)
         print(f"Successfully saved 3D scatter plot to {output_path}")
     
     def export_ground_truth_scatter_3d(self, output_path, true_labels_list):
-        """สร้าง 3D Scatter Plot โดยลงสีตามเฉลย (Ground Truth)"""
         if self.probs is None: return
         print("Running UMAP for Ground Truth 3D visualization...")
         

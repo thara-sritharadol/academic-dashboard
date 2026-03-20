@@ -72,7 +72,7 @@ class Command(BaseCommand):
                     authors_struct = paper_data.pop("authors_struct", [])
                     
                     # save Paper into DB
-                    paper_obj, p_created = Paper.objects.get_or_create(
+                    paper_obj, p_created = Paper.objects.update_or_create(
                         doi=doi,
                         defaults=paper_data
                     )
