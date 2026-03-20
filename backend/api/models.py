@@ -5,7 +5,7 @@ class Author(models.Model):
     name = models.CharField(max_length=255)
 
     faculty = models.CharField(max_length=255, null=True, blank=True)
-    institution = models.CharField(max_length=255, default="Thammasat University")
+    institution = models.CharField(max_length=255, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
 
     last_fetched_papers = models.DateTimeField(null=True, blank=True)

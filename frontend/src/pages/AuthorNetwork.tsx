@@ -13,8 +13,7 @@ import {
 
 export default function AuthorNetwork() {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
-  const [loading, setLoading] = useState(false);
-
+  const [loading, setLoading] = useState(true);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
   // Multi-select Checkbox
@@ -36,7 +35,7 @@ export default function AuthorNetwork() {
       try {
         const res = await api.get("/network/authors/", {
           params: {
-            limit: 100,
+            limit: 500,
             // Pass an array as a string separated by commas, such as "Topic 1,Topic 3".
             domains:
               selectedDomains.length > 0
@@ -56,8 +55,8 @@ export default function AuthorNetwork() {
 
   useEffect(() => {
     if (!loading && fgRef.current && graphData.nodes.length > 0) {
-      fgRef.current.d3Force("charge")?.strength(-10);
-      fgRef.current.d3Force("link")?.distance(30);
+      fgRef.current.d3Force("charge")?.strength(-100);
+      fgRef.current.d3Force("link")?.distance(80);
     }
   }, [graphData, loading]);
 
@@ -282,51 +281,60 @@ export default function AuthorNetwork() {
             graphData={graphData}
             width={
               typeof window !== "undefined" ? window.innerWidth - 300 : 800
-            }
+            } //
             height={
               typeof window !== "undefined" ? window.innerHeight - 150 : 600
-            }
-            nodeLabel="name"
+            } //
+            nodeLabel="name" //
+            // 1. ปรับขนาด Node และการโชว์ Label
             nodeCanvasObject={(node: any, ctx, globalScale) => {
-              const label = node.name;
-              const isTu = node.faculty && node.faculty.trim() !== "";
-              const nodeRadius = Math.sqrt(node.val) * 2.2 + 1.5;
+              const label = node.name; //
+              const isTu = node.faculty && node.faculty.trim() !== ""; //
 
-              ctx.beginPath();
-              ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
-              ctx.fillStyle = isTu ? COLOR_TU : COLOR_EXTERNAL;
-              ctx.fill();
+              // สูตรใหม่: ทำให้ขนาดโหนดแตกต่างกันชัดเจนขึ้น
+              const nodeRadius = Math.max(3, (node.val || 1) * 0.8 + 2);
 
-              ctx.lineWidth = 1 / globalScale;
-              ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af";
-              ctx.stroke();
+              ctx.beginPath(); //
+              ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false); //
+              ctx.fillStyle = isTu ? COLOR_TU : COLOR_EXTERNAL; //
+              ctx.fill(); //
 
-              if (globalScale > 1.5) {
-                const fontSize = 11 / globalScale;
-                ctx.font = `${fontSize}px Inter, Sans-Serif`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "top";
-                ctx.fillStyle = COLOR_TEXT;
+              ctx.lineWidth = 1 / globalScale; //
+              ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af"; //
+              ctx.stroke(); //
+
+              // ลอจิกใหม่: โชว์ชื่อเฉพาะคนที่ซูมใกล้ๆ หรือคนที่เป็นโหนดใหญ่ (มีผลงานเยอะ)
+              if (globalScale > 2 || (globalScale > 1.2 && node.val > 3)) {
+                const fontSize = 11 / globalScale; //
+                ctx.font = `${fontSize}px Inter, Sans-Serif`; //
+                ctx.textAlign = "center"; //
+                ctx.textBaseline = "top"; //
+                ctx.fillStyle = COLOR_TEXT; //
                 ctx.fillText(
-                  label,
-                  node.x,
-                  node.y + nodeRadius + 3 / globalScale,
+                  label, //
+                  node.x, //
+                  node.y + nodeRadius + 3 / globalScale, //
                 );
               }
             }}
             linkColor={(link: any) => {
-              const sourceIsTu =
-                link.source.faculty && link.source.faculty.trim() !== "";
-              const targetIsTu =
-                link.target.faculty && link.target.faculty.trim() !== "";
-              if (!sourceIsTu && !targetIsTu)
-                return "rgba(209, 213, 219, 0.15)";
-              return "rgba(148, 163, 184, 0.3)";
+              // เช็คให้ชัวร์ว่า source/target ไม่ใช่แค่ string ID
+              const source =
+                typeof link.source === "object" ? link.source : null;
+              const target =
+                typeof link.target === "object" ? link.target : null;
+              if (!source || !target) return "rgba(148, 163, 184, 0.3)";
+
+              const sourceIsTu = source.faculty && source.faculty.trim() !== "";
+              const targetIsTu = target.faculty && target.faculty.trim() !== "";
+
+              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)"; // เส้น TU-TU ให้เป็นสีน้ำเงินอ่อน
+              return "rgba(148, 163, 184, 0.5)"; // เส้น TU-คนนอก ให้เป็นสีเทาเข้มขึ้นนิดนึงให้เห็นชัด
             }}
-            linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2}
-            d3VelocityDecay={0.25}
-            cooldownTicks={120}
-            onEngineStop={() => fgRef.current?.zoomToFit(400, 70)}
+            linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2} //
+            d3VelocityDecay={0.25} //
+            cooldownTicks={120} //
+            onEngineStop={() => fgRef.current?.zoomToFit(400, 70)} //
           />
         )}
       </div>

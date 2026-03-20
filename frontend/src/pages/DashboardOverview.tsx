@@ -9,6 +9,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Brush,
 } from "recharts";
 import api from "../services/api";
 import type { DashboardSummary } from "../types/models";
@@ -20,6 +21,29 @@ export default function DashboardOverview() {
 
   // State For Topic
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
+
+  const processedTrends = useMemo(() => {
+    if (trends.length === 0) return [];
+
+    // หา Topic ทั้งหมดที่มีในระบบ
+    const allTopics = new Set<string>();
+    trends.forEach((yearData) => {
+      Object.keys(yearData).forEach((key) => {
+        if (key !== "year") allTopics.add(key);
+      });
+    });
+
+    // สร้าง Array ใหม่ที่เติม 0 เข้าไป
+    return trends.map((yearData) => {
+      const filledData = { ...yearData };
+      allTopics.forEach((topic) => {
+        if (filledData[topic] === undefined) {
+          filledData[topic] = 0; // เติม 0 ให้ปีที่ไม่มีการตีพิมพ์หัวข้อนี้
+        }
+      });
+      return filledData;
+    });
+  }, [trends]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -55,6 +79,11 @@ export default function DashboardOverview() {
       return { fullKey: key, shortName, names: name };
     });
   }, [trends]);
+
+  const getDynamicColor = (index: number) => {
+    const hue = (index * 137.508) % 360;
+    return `hsl(${hue}, 70%, 50%)`;
+  };
 
   useEffect(() => {
     if (domainInfo.length > 0 && selectedDomains.length === 0) {
@@ -151,7 +180,7 @@ export default function DashboardOverview() {
             {trends.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
-                  data={trends}
+                  data={processedTrends}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid
@@ -182,19 +211,33 @@ export default function DashboardOverview() {
                       const colorIndex = domainInfo.findIndex(
                         (d) => d.fullKey === domain.fullKey,
                       );
+
+                      const lineColor = getDynamicColor(colorIndex);
+
                       return (
                         <Line
                           key={domain.fullKey}
                           name={domain.shortName}
                           dataKey={domain.fullKey}
                           type="monotone"
-                          stroke={colors[colorIndex % colors.length]}
+                          stroke={lineColor}
                           strokeWidth={3}
                           dot={{ r: 4, strokeWidth: 2 }}
                           activeDot={{ r: 6 }}
                         />
                       );
                     })}
+                  <Brush
+                    dataKey="year"
+                    height={30}
+                    stroke="#94a3b8"
+                    fill="#f8fafc"
+                    startIndex={
+                      processedTrends.length > 10
+                        ? processedTrends.length - 11
+                        : 0
+                    } // ให้ default ซูมดูแค่ 20 ปีล่าสุด
+                  />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -213,7 +256,10 @@ export default function DashboardOverview() {
           <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
             {domainInfo.map((domain, index) => {
               const isSelected = selectedDomains.includes(domain.fullKey);
-              const dotColor = colors[index % colors.length];
+
+              const dotColor = getDynamicColor(index);
+
+              //const dotColor = colors[index % colors.length];
 
               return (
                 <div
