@@ -23,15 +23,14 @@ class Command(BaseCommand):
         
         updated_count = 0
         
-        # ใช้ transaction.atomic() เพื่อให้ Database ทำงานเร็วขึ้นตอน Update รวดเดียว
         with transaction.atomic():
             for result in results:
                 Paper.objects.filter(id=result['id']).update(
                     cluster_id=result['cluster_id'],
                     cluster_label=result['cluster_label'],
                     predicted_multi_labels=result['predicted_multi_labels'],
-                    topic_keywords=result['topic_keywords']
-                    # topic_distribution=result.get('topic_distribution') # ถ้าเก็บ distribution มาด้วย
+                    topic_keywords=result['topic_keywords'],
+                    topic_distribution=result.get('topic_distribution')
                 )
                 updated_count += 1
 
