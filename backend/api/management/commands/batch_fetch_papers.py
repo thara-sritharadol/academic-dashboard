@@ -85,13 +85,36 @@ class Command(BaseCommand):
                     # Manage co-authors slightly (no need for detailed creation to reduce bottlenecks).
                     for auth_data in authors_struct:
                         co_name = auth_data.get("name")
-                        if co_name and co_name.lower() != author_name.lower():
-                            co_author_obj, _ = Author.objects.get_or_create(name=co_name)
+                        co_oa_id = auth_data.get("openalex_id")
+
+                        if not co_name:
+                            continue
+
+                        if co_name.lower() == author_name.lower():
+                            if co_oa_id and not author.openalex_id:
+                                author.openalex_id = co_oa_id
+
+                        else:
+                            co_author_obj = None
+                            
+                            # If an OpenAlex ID is provided, use that ID as the primary reference for searching or creating a new one.
+                            if co_oa_id:
+                                co_author_obj, _ = Author.objects.get_or_create(
+                                    openalex_id=co_oa_id,
+                                    defaults={"name": co_name}
+                                )
+                            else:
+                                # If there is no ID, search by name (use iexact to ignore case sensitivity).
+                                co_author_obj = Author.objects.filter(name__iexact=co_name).first()
+                                if not co_author_obj:
+                                    co_author_obj = Author.objects.create(name=co_name)
+                                    
                             paper_obj.authors.add(co_author_obj)
+
             
             # The timestamp indicates that this professor has finished updating the paper.
             author.last_fetched_papers = timezone.now()
-            author.save(update_fields=['last_fetched_papers'])
+            author.save(update_fields=['last_fetched_papers', 'openalex_id'])
             
             time.sleep(1.5)
 

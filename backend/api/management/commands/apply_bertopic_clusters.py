@@ -2,7 +2,6 @@ import os
 import json
 import re
 from tqdm import tqdm
-import google.generativeai as genai
 from django.core.management.base import BaseCommand
 from api.models import Paper
 from api.services.bertopic_service import BERTopicService 
@@ -38,7 +37,7 @@ class Command(BaseCommand):
         topics, probs = bertopic_service.fit_transform(docs) #
 
         self.stdout.write(self.style.NOTICE("3. Assigning LLM Names..."))
-        # เรียกใช้ Gemini Service 
+        # Gemini Service 
         gemini_service = GeminiNamingService(api_key=gemini_key)
         llm_names = gemini_service.generate_topic_names(bertopic_service.topic_model)
 
@@ -48,6 +47,10 @@ class Command(BaseCommand):
         for i, paper_id in enumerate(tqdm(paper_ids, desc="Saving to DB")):
             topic_id = topics[i]
             paper_prob = probs[i] if probs is not None else []
+            distribution_list = []
+
+            if len(paper_prob) > 0:
+                distribution_list = [float(prob) for prob in paper_prob]
 
             if topic_id == -1:
                 cluster_label = "Outlier / Noise"
@@ -56,7 +59,7 @@ class Command(BaseCommand):
                 if topic_str_id in llm_names:
                     cluster_label = f"Topic {topic_id}: {llm_names[topic_str_id]}"
                 else:
-                    words = [word for word, _ in topic_model.get_topic(topic_id)][:5]
+                    words = [word for word, _ in bertopic_service.topic_model.get_topic(topic_id)][:5]
                     cluster_label = f"Topic {topic_id}: {', '.join(words)}"
 
             multi_labels = [cluster_label]
@@ -67,19 +70,20 @@ class Command(BaseCommand):
                         if alt_str_id in llm_names:
                             alt_label = f"Topic {alt_topic_id}: {llm_names[alt_str_id]}"
                         else:
-                            alt_words = [word for word, _ in topic_model.get_topic(alt_topic_id)][:5]
+                            alt_words = [word for word, _ in bertopic_service.topic_model.get_topic(alt_topic_id)][:5]
                             alt_label = f"Topic {alt_topic_id}: {', '.join(alt_words)}"
                         multi_labels.append(alt_label)
 
             raw_keywords = []
             if topic_id != -1:
-                raw_keywords = [word for word, _ in topic_model.get_topic(topic_id)][:10]
+                raw_keywords = [word for word, _ in bertopic_service.topic_model.get_topic(topic_id)][:10]
 
             Paper.objects.filter(id=paper_id).update(
                 cluster_id=topic_id,
                 cluster_label=cluster_label,
                 predicted_multi_labels=multi_labels,
-                topic_keywords=raw_keywords
+                topic_keywords=raw_keywords,
+                topic_distribution=distribution_list
             )
             updated_count += 1
 

@@ -35,7 +35,7 @@ export default function AuthorNetwork() {
       try {
         const res = await api.get("/network/authors/", {
           params: {
-            limit: 500,
+            limit: 1000,
             // Pass an array as a string separated by commas, such as "Topic 1,Topic 3".
             domains:
               selectedDomains.length > 0
@@ -286,12 +286,12 @@ export default function AuthorNetwork() {
               typeof window !== "undefined" ? window.innerHeight - 150 : 600
             } //
             nodeLabel="name" //
-            // 1. ปรับขนาด Node และการโชว์ Label
+            // Resizing Node sizes and displaying Labels.
             nodeCanvasObject={(node: any, ctx, globalScale) => {
               const label = node.name; //
               const isTu = node.faculty && node.faculty.trim() !== ""; //
 
-              // สูตรใหม่: ทำให้ขนาดโหนดแตกต่างกันชัดเจนขึ้น
+              // makes the differences in node sizes more apparent.
               const nodeRadius = Math.max(3, (node.val || 1) * 0.8 + 2);
 
               ctx.beginPath(); //
@@ -303,7 +303,7 @@ export default function AuthorNetwork() {
               ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af"; //
               ctx.stroke(); //
 
-              // ลอจิกใหม่: โชว์ชื่อเฉพาะคนที่ซูมใกล้ๆ หรือคนที่เป็นโหนดใหญ่ (มีผลงานเยอะ)
+              // Show only the names of those who are zoomed in closely, or those who are major nodes (those with a lot of contributions).
               if (globalScale > 2 || (globalScale > 1.2 && node.val > 3)) {
                 const fontSize = 11 / globalScale; //
                 ctx.font = `${fontSize}px Inter, Sans-Serif`; //
@@ -318,7 +318,7 @@ export default function AuthorNetwork() {
               }
             }}
             linkColor={(link: any) => {
-              // เช็คให้ชัวร์ว่า source/target ไม่ใช่แค่ string ID
+              // Make sure that source/target is not just a string ID.
               const source =
                 typeof link.source === "object" ? link.source : null;
               const target =
@@ -328,8 +328,8 @@ export default function AuthorNetwork() {
               const sourceIsTu = source.faculty && source.faculty.trim() !== "";
               const targetIsTu = target.faculty && target.faculty.trim() !== "";
 
-              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)"; // เส้น TU-TU ให้เป็นสีน้ำเงินอ่อน
-              return "rgba(148, 163, 184, 0.5)"; // เส้น TU-คนนอก ให้เป็นสีเทาเข้มขึ้นนิดนึงให้เห็นชัด
+              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)"; // The TU-TU line be light blue.
+              return "rgba(148, 163, 184, 0.5)"; // Make the TU-External line a slightly darker gray so it's more visible.
             }}
             linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2} //
             d3VelocityDecay={0.25} //

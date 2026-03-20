@@ -25,7 +25,7 @@ export default function DashboardOverview() {
   const processedTrends = useMemo(() => {
     if (trends.length === 0) return [];
 
-    // หา Topic ทั้งหมดที่มีในระบบ
+    // Find all topics available in the system.
     const allTopics = new Set<string>();
     trends.forEach((yearData) => {
       Object.keys(yearData).forEach((key) => {
@@ -33,12 +33,12 @@ export default function DashboardOverview() {
       });
     });
 
-    // สร้าง Array ใหม่ที่เติม 0 เข้าไป
+    // Create a new array and add 0 to it.
     return trends.map((yearData) => {
       const filledData = { ...yearData };
       allTopics.forEach((topic) => {
         if (filledData[topic] === undefined) {
-          filledData[topic] = 0; // เติม 0 ให้ปีที่ไม่มีการตีพิมพ์หัวข้อนี้
+          filledData[topic] = 0; // Add 0 to the years in which this topic was not published.
         }
       });
       return filledData;
@@ -90,29 +90,6 @@ export default function DashboardOverview() {
       setSelectedDomains(domainInfo.slice(0, 5).map((d) => d.fullKey));
     }
   }, [domainInfo]);
-
-  const colors = [
-    "#3b82f6",
-    "#10b981",
-    "#f59e0b",
-    "#8b5cf6",
-    "#ef4444",
-    "#ec4899",
-    "#14b8a6",
-    "#f97316",
-    "#6366f1",
-    "#84cc16",
-    "#06b6d4",
-    "#d946ef",
-    "#eab308",
-    "#22c55e",
-    "#a855f7",
-    "#fb923c",
-    "#0ea5e9",
-    "#f43f5e",
-    "#64748b",
-    "#334155",
-  ];
 
   const toggleDomain = (domainKey: string) => {
     setSelectedDomains((prev) =>
@@ -234,9 +211,9 @@ export default function DashboardOverview() {
                     fill="#f8fafc"
                     startIndex={
                       processedTrends.length > 10
-                        ? processedTrends.length - 11
+                        ? processedTrends.length - 21
                         : 0
-                    } // ให้ default ซูมดูแค่ 20 ปีล่าสุด
+                    } // default Zoom
                   />
                 </LineChart>
               </ResponsiveContainer>
