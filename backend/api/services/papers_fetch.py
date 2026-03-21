@@ -40,7 +40,6 @@ def _get_openalex_author_id(author_name: str) -> str:
     return None
 
 def _reconstruct_openalex_abstract(inverted_index: dict) -> str:
-    """แปลง Inverted Index ของ OpenAlex กลับมาเป็น Text ปกติ"""
     if not inverted_index:
         return None
     
@@ -146,6 +145,20 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
                 venue_source = primary_loc.get("source") or {}
                 venue_name = venue_source.get("display_name")
 
+                concepts = []
+                for concept in item.get("concepts", []):
+                     concept_id = concept.get("id") 
+                     concept_name = concept.get("display_name")
+                     concept_score = concept.get("score", 0.0)
+                     concept_level = concept.get("level")
+                     if concept_id and concept_name:
+                         concepts.append({
+                             "openalex_id": concept_id,
+                             "name": concept_name,
+                             "score": concept_score,
+                             "level": concept_level,
+                         })
+
                 paper_data = {
                     "doi": doi,
                     "title": item.get("title", "(No Title)"),
@@ -154,7 +167,8 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
                     "year": item.get("publication_year"),
                     "venue": venue_name,
                     "url": doi_url,
-                    "citation_count": item.get("cited_by_count", 0), 
+                    "citation_count": item.get("cited_by_count", 0),
+                    "openalex_concepts": concepts,
                 }
 
                 raw_abstract = item.get("abstract_inverted_index")

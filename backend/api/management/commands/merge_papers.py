@@ -2,11 +2,11 @@ from django.core.management.base import BaseCommand
 from api.services.data_deduplication_service import DataDeduplicationService
 
 class Command(BaseCommand):
-    help = "Merge duplicate authors based on exact case-insensitive name matching"
+    help = "Merge duplicate papers based on exact case-insensitive title matching"
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("Scanning for duplicate authors..."))
-        result = DataDeduplicationService.merge_duplicate_authors()
+        self.stdout.write(self.style.NOTICE("Scanning for duplicate papers..."))
+        result = DataDeduplicationService.merge_duplicate_papers()
         
         if result["deleted"] == 0:
             self.stdout.write(self.style.SUCCESS(result["message"]))

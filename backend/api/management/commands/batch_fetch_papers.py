@@ -70,6 +70,7 @@ class Command(BaseCommand):
                     if not doi: continue
                     
                     authors_struct = paper_data.pop("authors_struct", [])
+                    # Note: openalex_concepts will be automatically saved to DB since it remains in paper_data
                     
                     # save Paper into DB
                     paper_obj, p_created = Paper.objects.update_or_create(
@@ -92,7 +93,9 @@ class Command(BaseCommand):
 
                         if co_name.lower() == author_name.lower():
                             if co_oa_id and not author.openalex_id:
-                                author.openalex_id = co_oa_id
+                                # Check if this openalex_id is already assigned to another author
+                                if not Author.objects.filter(openalex_id=co_oa_id).exclude(pk=author.pk).exists():
+                                    author.openalex_id = co_oa_id
 
                         else:
                             co_author_obj = None
@@ -111,7 +114,6 @@ class Command(BaseCommand):
                                     
                             paper_obj.authors.add(co_author_obj)
 
-            
             # The timestamp indicates that this professor has finished updating the paper.
             author.last_fetched_papers = timezone.now()
             author.save(update_fields=['last_fetched_papers', 'openalex_id'])
