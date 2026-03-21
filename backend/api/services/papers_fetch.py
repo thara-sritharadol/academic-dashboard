@@ -1,6 +1,15 @@
 import requests
 import time
 
+POLITE_EMAIL = "sunsummerone1@gmail.com"
+S2_API_KEY = ""
+
+def get_common_headers():
+    headers = {
+        "User-Agent": f"TU-Research-Network-Bot/1.0 (mailto:{POLITE_EMAIL})"
+    }
+    return headers
+
 def _enrich_with_semantic_scholar(doi: str) -> dict:
     #Fetches additional paper details from Semantic Scholar using a DOI.
     if not doi:
@@ -8,26 +17,37 @@ def _enrich_with_semantic_scholar(doi: str) -> dict:
 
     s2_url = f"https://api.semanticscholar.org/graph/v1/paper/DOI:{doi}"
     s2_params = {"fields": "abstract,fieldsOfStudy,citationCount"}
+
+    headers = get_common_headers()
+    if S2_API_KEY:
+        headers["x-api-key"] = S2_API_KEY
     
-    try:
-        s2_resp = requests.get(s2_url, params=s2_params, timeout=10)
-        if s2_resp.status_code == 200:
-            s2_data = s2_resp.json()
-            return {
-                "abstract": s2_data.get("abstract"),
-                "fields_of_study": ",".join(s2_data.get("fieldsOfStudy", []) or []),
-                "citation_count": s2_data.get("citationCount", 0),
-            }
-    except requests.RequestException:
-        pass
-        
+    for attempt in range(3):
+        try:
+            s2_resp = requests.get(s2_url, params=s2_params, headers=headers, timeout=10)
+            if s2_resp.status_code == 200:
+                s2_data = s2_resp.json()
+                return {
+                    "abstract": s2_data.get("abstract"),
+                    "fields_of_study": ",".join(s2_data.get("fieldsOfStudy", []) or []),
+                    "citation_count": s2_data.get("citationCount", 0),
+                }
+            elif s2_resp.status_code == 429: # Too Many Requests
+                print(f"   > Semantic Scholar rate limit hit. Waiting 5 seconds... (Attempt {attempt+1})")
+                time.sleep(5)
+                continue
+            else:
+                break # Error อื่นๆ ให้ข้ามเลย
+        except requests.RequestException:
+            time.sleep(2)
+            
     return {}
 
 def _get_openalex_author_id(author_name: str) -> str:
     url = "https://api.openalex.org/authors"
     params = {"search": author_name}
     try:
-        resp = requests.get(url, params=params, timeout=10)
+        resp = requests.get(url, params=params, headers=get_common_headers(),timeout=10)
         if resp.status_code == 200:
             results = resp.json().get("results", [])
             if results:
@@ -84,7 +104,7 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
         params["search"] = query
 
     try:
-        first_resp = requests.get(base_url, params=params, timeout=10)
+        first_resp = requests.get(base_url, params=params, headers=get_common_headers(),timeout=10)
         if first_resp.status_code != 200:
             yield 0
             return
@@ -108,7 +128,7 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
         params["page"] = page
         
         try:
-            resp = requests.get(base_url, params=params, timeout=10)
+            resp = requests.get(base_url, params=params, headers=get_common_headers(), timeout=10)
             if resp.status_code != 200: 
                 break
             
@@ -204,7 +224,7 @@ def _stream_from_crossref(author: str = None, query: str = None, start_year: int
         base_params["query"] = query
     
     try:
-        first_resp = requests.get(url, params={**base_params, "offset": 0}, timeout=10)
+        first_resp = requests.get(url, params={**base_params, "offset": 0}, headers=get_common_headers(),timeout=10)
         if first_resp.status_code != 200:
             yield 0
             return
@@ -226,7 +246,7 @@ def _stream_from_crossref(author: str = None, query: str = None, start_year: int
         params["offset"] = offset
 
         try:
-            response = requests.get(url, params=params, timeout=10)
+            response = requests.get(url, params=params, headers=get_common_headers(),timeout=10)
             if response.status_code != 200:
                 break
             

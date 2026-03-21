@@ -35,7 +35,7 @@ export default function AuthorNetwork() {
       try {
         const res = await api.get("/network/authors/", {
           params: {
-            limit: 1000,
+            limit: 200,
             // Pass an array as a string separated by commas, such as "Topic 1,Topic 3".
             domains:
               selectedDomains.length > 0

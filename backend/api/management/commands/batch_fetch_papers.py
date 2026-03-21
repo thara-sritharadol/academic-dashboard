@@ -70,7 +70,6 @@ class Command(BaseCommand):
                     if not doi: continue
                     
                     authors_struct = paper_data.pop("authors_struct", [])
-                    # Note: openalex_concepts will be automatically saved to DB since it remains in paper_data
                     
                     # save Paper into DB
                     paper_obj, p_created = Paper.objects.update_or_create(
@@ -100,12 +99,22 @@ class Command(BaseCommand):
                         else:
                             co_author_obj = None
                             
-                            # If an OpenAlex ID is provided, use that ID as the primary reference for searching or creating a new one.
+                            # 1. ลองหาจาก ID ก่อน
                             if co_oa_id:
-                                co_author_obj, _ = Author.objects.get_or_create(
-                                    openalex_id=co_oa_id,
-                                    defaults={"name": co_name}
-                                )
+                                co_author_obj = Author.objects.filter(openalex_id=co_oa_id).first()
+
+                                if not co_author_obj:
+                                    # 2. ถ้าไม่เจอจาก ID ให้ลองหาจากชื่อ (ใช้ iexact)
+                                    co_author_obj = Author.objects.filter(name__iexact=co_name).first()
+
+                                    if co_author_obj:
+                                        # ถ้าเจอจากชื่อ แปลว่าเป็นคนเดียวกัน -> อัปเดต ID ให้เลย
+                                        co_author_obj.openalex_id = co_oa_id
+                                        co_author_obj.save(update_fields=['openalex_id'])
+                                    else:
+                                        # 3. ถ้าไม่เจอทั้ง ID และไม่เจอทั้งชื่อ -> ถึงจะสร้างใหม่
+                                        co_author_obj = Author.objects.create(name=co_name, openalex_id=co_oa_id)
+
                             else:
                                 # If there is no ID, search by name (use iexact to ignore case sensitivity).
                                 co_author_obj = Author.objects.filter(name__iexact=co_name).first()
