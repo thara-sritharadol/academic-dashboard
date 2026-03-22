@@ -37,31 +37,24 @@ export default function PaperSearch() {
     }
   };
 
+  // ลบ useEffect ทั้งสองตัวเดิมทิ้ง แล้วใช้ตัวนี้แทน
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // API call to retrieve both a list of papers and a list of domains simultaneously.
-        const [papersRes, topicsRes] = await Promise.all([
-          api.get("/papers/"),
-          api.get("/analytics/topics/"),
-        ]);
-        setPapers(papersRes.data);
-        setAvailableDomains(topicsRes.data); // Store the domain list in the State.
+        // 1. ดึงข้อมูลรายชื่อ Topics มาก่อน
+        const topicsRes = await api.get("/analytics/topics/");
+        setAvailableDomains(topicsRes.data);
+
+        // 2. เรียกใช้ฟังก์ชัน fetchPapers() ที่มีอยู่แล้ว (จะได้ไม่เขียนโค้ดซ้ำ)
+        await fetchPapers();
       } catch (error) {
         console.error("Error fetching initial data:", error);
-      } finally {
-        setLoading(false);
+        setLoading(false); // ป้องกันค้างหน้าโหลดถ้า Error
       }
     };
 
     fetchInitialData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // The data is retrieved for the first time when the webpage is loaded.
-  useEffect(() => {
-    fetchPapers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

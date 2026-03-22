@@ -24,7 +24,7 @@ class PaperViewSet(viewsets.ReadOnlyModelViewSet):
         domain = self.request.query_params.get('domain', None)
         cluster_id = self.request.query_params.get('cluster_id', None)
 
-        if q: queryset = queryset.filter(Q(title__icontains=q) | Q(abstract__icontains=q))
+        if q: queryset = queryset.filter(Q(title__icontains=q) | Q(abstract__icontains=q) | Q(authors__name__icontains=q)).distinct()
         if year: queryset = queryset.filter(year=year)
         if domain:
             domain_prefix = domain.split(':')[0].strip()
