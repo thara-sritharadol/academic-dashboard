@@ -39,7 +39,6 @@ class GeminiNamingService:
 
             prompt += f"Topic ID: {topic_id}\n" #
             prompt += f"Keywords: {', '.join(keywords)}\n" #
-            prompt += f"Representative Titles: {titles}\n\n" #
 
         try:
             response = self.model.generate_content(

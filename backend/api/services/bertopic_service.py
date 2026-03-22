@@ -1,7 +1,7 @@
 import logging
 import numpy as np
 import spacy
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from umap import UMAP
 from bertopic import BERTopic
 from gensim.models.coherencemodel import CoherenceModel
@@ -37,20 +37,42 @@ class BERTopicService:
             ngram_range=(1, 2)
         )
 
-    def _setup_stopwords(self):
-        academic_stopwords = [
+    def __init__(self, n_topics=None, use_approx_dist=False, use_lemmatized_input=False):
+        self.n_topics = n_topics
+        self.use_approx_dist = use_approx_dist
+        self.use_lemmatized_input = use_lemmatized_input
+        self.nlp = None
+        self.topic_model = None
+        self.topics = None
+        self.probs = None
+
+        try:
+            self.nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
+            self.nlp.max_length = 10000000
+        except OSError:
+            print("Spacy model 'en_core_web_sm' not found.")
+            raise
+
+        self.academic_stopwords = [
             'finding', 'findings', 'illustrate', 'significant', 'provide', 'provides', 'potential', 'associated', 'effective', 'aspect', 'aspects', 'challenge', 'challenges',
             'paper', 'study', 'research', 'result', 'results', 'method', 'methodology',
-            'proposed', 'propose', 'approach', 'based', 'using', 'used', 'use',
+            'proposed', 'propose', 'approach', 'based', 'using', 'used', 'use', 'to', 'we', 'source',
             'analysis', 'model', 'system', 'data', 'application', 'new', 'development',
             'performance', 'conclusion', 'abstract', 'introduction', 'work', 'time',
             'significant', 'shown', 'show', 'demonstrate', 'experiment', 'experimental',
-            'university', 'department', 'author', 'et', 'al', 'figure', 'table', 'show'
-            'high', 'low', 'large', 'small', 'different', 'various', 'property', 'properties', 'increase', 'show', 'effect', 'high', 'activity',
+            'university', 'department', 'author', 'et', 'al', 'figure', 'table', # <-- เติมลูกน้ำที่หายไป
+            'high', 'low', 'large', 'small', 'different', 'various', 'property', 'properties', 'increase', 'effect', 'activity',
             'structure', 'compound', 'condition', 'quality', 'entry', 'contain', 'parameter', 'observe', 'report', 'present', 'evaluate'
         ]
-        for word in academic_stopwords:
-            self.nlp.vocab[word].is_stop = True
+        
+        self.custom_stopwords = list(set(list(ENGLISH_STOP_WORDS) + self.academic_stopwords))
+
+        self.vectorizer_model = CountVectorizer(
+            stop_words=self.custom_stopwords, 
+            ngram_range=(1, 2),
+            min_df=5,
+            max_df=0.7
+        )
 
     def spacy_tokenizer(self, text):
         if not text: return []
@@ -100,6 +122,12 @@ class BERTopicService:
         # Use train_docs instead of documents.
         self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
+        print("Reducing outliers using Embeddings strategy...")
+        new_topics = self.topic_model.reduce_outliers(train_docs, self.topics, strategy="embeddings", threshold=0.5)
+
+        self.topic_model.update_topics(train_docs, topics=new_topics, vectorizer_model=self.vectorizer_model)
+        self.topics = new_topics
+
         if self.use_approx_dist:
             print("Calculating approximate topic distributions (c-TF-IDF)...")
             topic_distr, _ = self.topic_model.approximate_distribution(
@@ -115,7 +143,7 @@ class BERTopicService:
 
         return self.topics, self.probs
 
-    def get_top_words_list(self, n_top_words=10):
+    def get_top_words_list(self, n_top_words=15):
         topics_words = []
         n_valid_topics = len(self.probs[0]) if self.probs is not None and len(self.probs) > 0 else 0
         
@@ -127,7 +155,7 @@ class BERTopicService:
                 topics_words.append([])
         return topics_words
 
-    def calculate_topic_diversity(self, n_top_words=10):
+    def calculate_topic_diversity(self, n_top_words=15):
         topics_words = self.get_top_words_list(n_top_words)
         unique_words = set()
         total_words = 0
@@ -141,7 +169,7 @@ class BERTopicService:
     def calculate_coherence_score(self, documents):
         print("Calculating BERTopic Coherence...")
         tokenized_docs = [self.spacy_tokenizer(doc) for doc in documents]
-        topics_words = [words for words in self.get_top_words_list(n_top_words=10) if words]
+        topics_words = [words for words in self.get_top_words_list(n_top_words=15) if words]
         
         dictionary = Dictionary(tokenized_docs)
         
@@ -157,7 +185,7 @@ class BERTopicService:
             print(f"Coherence calc error: {e}")
             return 0.0
 
-    def export_top_words_barchart(self, output_path, n_top_words=10):
+    def export_top_words_barchart(self, output_path, n_top_words=15):
         if self.topic_model is None or not self.topic_model.get_topics(): return
         print("Generating Top Words Bar Chart...")
         valid_topics = [t for t in self.topic_model.get_topics().keys() if t != -1]
