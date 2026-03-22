@@ -25,7 +25,42 @@ export default function PaperDetail() {
   const { id } = useParams();
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [topicMap, setTopicMap] = useState<Record<number, string>>({});
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [paperRes, topicRes] = await Promise.all([
+          api.get(`/papers/${id}/`),
+          api.get("/analytics/topics/"),
+        ]);
+
+        setPaper(paperRes.data);
+
+        const map: Record<number, string> = {};
+        if (Array.isArray(topicRes.data)) {
+          topicRes.data.forEach((topicStr: string) => {
+            const match = topicStr.match(/(-?\d+)\s*:\s*(.+)/);
+            if (match) {
+              const topicId = parseInt(match[1], 10);
+              const topicName = match[2].trim();
+              map[topicId] = topicName;
+            }
+          });
+        }
+
+        setTopicMap(map);
+      } catch {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [id]);
+  /* 
   useEffect(() => {
     const fetchPaperDetail = async () => {
       try {
@@ -39,7 +74,7 @@ export default function PaperDetail() {
     };
     fetchPaperDetail();
   }, [id]);
-
+    */
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -57,7 +92,8 @@ export default function PaperDetail() {
   }
 
   // Convert the topic_distribution array into data for a radar chart.
-  const prepareRadarData = (distribution: number[]) => {
+
+  /*const prepareRadarData = (distribution: number[]) => {
     if (!distribution || distribution.length === 0) return [];
 
     return distribution
@@ -68,6 +104,32 @@ export default function PaperDetail() {
       .filter((item) => item.probability > 2) // Filter to include only topics that account for more than 2%.
       .sort((a, b) => b.probability - a.probability) // Sorted from highest to lowest.
       .slice(0, 6); // Just display the top 6 to make the graph look nice.
+  };
+  */
+
+  const prepareRadarData = (distribution: number[]) => {
+    if (!distribution || distribution.length === 0) return [];
+
+    return distribution
+      .map((prob, index) => {
+        const rawSubject = topicMap[index] || `Topic ${index}`;
+        const shortSubject =
+          rawSubject.length > 22
+            ? rawSubject.substring(0, 22) + "..."
+            : rawSubject;
+
+        return {
+          subject: shortSubject,
+          originalProb: prob,
+        };
+      })
+      .filter((item) => item.originalProb > 0.02)
+      .sort((a, b) => b.originalProb - a.originalProb)
+      .slice(0, 6)
+      .map((item) => ({
+        subject: item.subject,
+        probability: Math.round(item.originalProb * 100),
+      }));
   };
 
   const radarData = prepareRadarData(paper.topic_distribution);
