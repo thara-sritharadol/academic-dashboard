@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Search, Filter, BookOpen, ExternalLink } from "lucide-react";
 import api from "../services/api";
 import type { Paper } from "../types/models";
+import PaperDetail from "./PaperDetail";
+import { Link } from "react-router-dom";
 
 export default function PaperSearch() {
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -10,7 +12,6 @@ export default function PaperSearch() {
   // State For Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("");
-
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
   // Fetch From API
@@ -187,9 +188,12 @@ export default function PaperSearch() {
                         {paper.title}
                       </div>
                       {/* In the future, create a button that allows you to click to the Details page. */}
-                      <div className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center gap-1">
+                      <Link
+                        to={`/papers/${paper.id}`}
+                        className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center gap-1"
+                      >
                         View details <ExternalLink size={12} />
-                      </div>
+                      </Link>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-slate-600 line-clamp-2">

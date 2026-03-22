@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import DashboardOverview from "./pages/DashboardOverview";
 import PaperSearch from "./pages/PaperSearch";
 import AuthorNetwork from "./pages/AuthorNetwork";
+import PaperDetail from "./pages/PaperDetail";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
             <Route path="/" element={<DashboardOverview />} />
             <Route path="/papers" element={<PaperSearch />} />
             <Route path="/authors" element={<AuthorNetwork />} />
+            <Route path="/papers/:id" element={<PaperDetail />} />
           </Routes>
         </main>
       </div>

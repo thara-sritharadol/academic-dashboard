@@ -34,6 +34,6 @@ class PaperDetailSerializer(serializers.ModelSerializer):
         model = Paper
         fields = [
             'id', 'title', 'abstract', 'year', 'doi', 'venue', 'url',
-            'cluster_id', 'cluster_label', 'predicted_multi_labels', 
+            'cluster_id', 'cluster_label', 'predicted_multi_labels',
             'topic_distribution', 'entropy', 'authors', 'citation_count'
         ]
