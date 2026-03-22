@@ -3,17 +3,18 @@ import random
 from django.core.management.base import BaseCommand
 from api.models import Paper
 
+"""
+For Testing Dataset
+"""
 class Command(BaseCommand):
     help = "Generate datasets with Multi-label and Single-label concepts."
 
     def add_arguments(self, parser):
         parser.add_argument('--threshold', type=float, default=0.3, help='Minimum score for a concept')
         parser.add_argument('--target_labels', nargs='+', default=['Mathematics', 'Computer science'], help='List of target Level 0 labels')
-        
         parser.add_argument('--min_match', type=int, default=1, help='Minimum number of target labels (1 for single+multi, 2 for multi only)')
         parser.add_argument('--max_match', type=int, default=None, help='Maximum number of target labels (e.g., 1 for strictly single label)')
         parser.add_argument('--strict_domain', action='store_true', help='If set, the paper must NOT contain any labels outside the target_labels')
-        
         parser.add_argument('--output', type=str, default='dataset_mixed_labels.json', help='Output JSON filename')
 
     def handle(self, *args, **options):
