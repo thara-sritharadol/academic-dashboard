@@ -14,8 +14,7 @@ class AuthorSerializer(serializers.ModelSerializer):
 
     def get_works_count(self, obj):
         return obj.papers.count()
-
-
+    
 # Paper Serializers
 class PaperListSerializer(serializers.ModelSerializer):
     authors_list = serializers.StringRelatedField(source='authors', many=True, read_only=True)
@@ -37,3 +36,17 @@ class PaperDetailSerializer(serializers.ModelSerializer):
             'cluster_id', 'cluster_label', 'predicted_multi_labels',
             'topic_distribution', 'entropy', 'authors', 'citation_count'
         ]
+
+class AuthorDetailSerializer(serializers.ModelSerializer):
+    works_count = serializers.SerializerMethodField()
+    papers = PaperListSerializer(many=True, read_only=True) 
+
+    class Meta:
+        model = Author
+        fields = [
+            'id', 'name', 'works_count', 'institution', 'faculty', 
+            'department', 'primary_cluster', 'topic_profile', 'papers'
+        ]
+
+    def get_works_count(self, obj):
+        return obj.papers.count()

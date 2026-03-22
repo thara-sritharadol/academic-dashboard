@@ -118,12 +118,12 @@ export default function PaperDetail() {
                     author.faculty ? "text-blue-500" : "text-slate-400"
                   }
                 />
-                <div>
+                <Link to={`/authors/${author.id}`}>
                   <div className="font-semibold text-sm">{author.name}</div>
                   {author.faculty && (
                     <div className="text-xs opacity-75">{author.faculty}</div>
                   )}
-                </div>
+                </Link>
               </div>
             ))}
           </div>
@@ -189,7 +189,6 @@ export default function PaperDetail() {
                         dataKey="subject"
                         tick={{ fill: "#64748b", fontSize: 10 }}
                       />
-                      {/* เปลี่ยนจาก domain={[0, 100]} เป็น 'auto' และเปิด tick ให้แสดงตัวเลขสเกล */}
                       <PolarRadiusAxis
                         angle={30}
                         domain={[0, "auto"]}

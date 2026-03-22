@@ -37,20 +37,19 @@ export default function PaperSearch() {
     }
   };
 
-  // ลบ useEffect ทั้งสองตัวเดิมทิ้ง แล้วใช้ตัวนี้แทน
   useEffect(() => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // 1. ดึงข้อมูลรายชื่อ Topics มาก่อน
+        // retrieve the list of Topics.
         const topicsRes = await api.get("/analytics/topics/");
         setAvailableDomains(topicsRes.data);
 
-        // 2. เรียกใช้ฟังก์ชัน fetchPapers() ที่มีอยู่แล้ว (จะได้ไม่เขียนโค้ดซ้ำ)
+        // Call the existing fetchPapers() function (to avoid writing duplicate code).
         await fetchPapers();
       } catch (error) {
         console.error("Error fetching initial data:", error);
-        setLoading(false); // ป้องกันค้างหน้าโหลดถ้า Error
+        setLoading(false); // Prevent the page from freezing during loading if an error occurs.
       }
     };
 

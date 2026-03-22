@@ -5,8 +5,8 @@ from rest_framework.permissions import AllowAny
 from django.db.models import Q
 
 from .models import Paper, Author
-from .serializers import PaperListSerializer, PaperDetailSerializer, AuthorSerializer
-from api.services.analytics_service import AnalyticsService  # นำเข้า Service ตัวใหม่
+from .serializers import AuthorDetailSerializer, PaperListSerializer, PaperDetailSerializer, AuthorSerializer
+from api.services.analytics_service import AnalyticsService
 
 # ==========================================
 # API for Paper (Search & Detail)
@@ -40,7 +40,11 @@ class PaperViewSet(viewsets.ReadOnlyModelViewSet):
 # ==========================================
 class AuthorViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Author.objects.all().prefetch_related('papers')
-    serializer_class = AuthorSerializer
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve': 
+            return AuthorDetailSerializer
+        return AuthorSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()

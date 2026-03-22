@@ -4,6 +4,7 @@ import DashboardOverview from "./pages/DashboardOverview";
 import PaperSearch from "./pages/PaperSearch";
 import AuthorNetwork from "./pages/AuthorNetwork";
 import PaperDetail from "./pages/PaperDetail";
+import AuthorDetail from "./pages/AuthorDetail";
 
 function App() {
   return (
@@ -14,8 +15,9 @@ function App() {
           <Routes>
             <Route path="/" element={<DashboardOverview />} />
             <Route path="/papers" element={<PaperSearch />} />
-            <Route path="/authors" element={<AuthorNetwork />} />
             <Route path="/papers/:id" element={<PaperDetail />} />
+            <Route path="/authors" element={<AuthorNetwork />} />
+            <Route path="/authors/:id" element={<AuthorDetail />} />
           </Routes>
         </main>
       </div>
