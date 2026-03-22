@@ -41,17 +41,17 @@ class Command(BaseCommand):
             call_command('batch_fetch_papers', batch_size=batch_size, faculty=tu_faculty)
 
             # ---------------------------------------------------------
-            # Deduplication (Merge Authors & Papers)
-            # ---------------------------------------------------------
-            self.stdout.write(self.style.NOTICE("\n>>> Step 3: Deduplicating Data..."))
-            call_command('merge_authors')
-            call_command('merge_papers')
-
-            # ---------------------------------------------------------
             # Clean Abstracts
             # ---------------------------------------------------------
-            self.stdout.write(self.style.NOTICE("\n>>> Step 4: Cleaning Abstracts (HTML/XML Tags)..."))
+            self.stdout.write(self.style.NOTICE("\n>>> Step 3: Cleaning Abstracts (HTML/XML Tags)..."))
             call_command('clean_abstracts')
+
+            # ---------------------------------------------------------
+            # Deduplication (Merge Authors & Papers)
+            # ---------------------------------------------------------
+            self.stdout.write(self.style.NOTICE("\n>>> Step 4: Deduplicating Data..."))
+            call_command('merge_authors')
+            call_command('merge_papers')
 
             # ---------------------------------------------------------
             # Clustering (BERTopic + Gemini)
@@ -62,6 +62,12 @@ class Command(BaseCommand):
             else:
                 self.stdout.write(self.style.WARNING("No Gemini Key provided. Running clustering without LLM naming."))
                 call_command('apply_bertopic_clusters')
+
+            # ---------------------------------------------------------
+            # Profiling (Argregate)
+            # ---------------------------------------------------------
+            self.stdout.write(self.style.NOTICE("\n>>> Step 6: Generating Author Profile..."))
+            call_command('generate_author_profiles')
 
         except Exception as e:
             self.stdout.write(self.style.ERROR(f"\nPipeline failed due to an error: {e}"))
