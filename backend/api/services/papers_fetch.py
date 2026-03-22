@@ -1,7 +1,7 @@
 import requests
 import time
 
-POLITE_EMAIL = "sunsummerone1@gmail.com"
+POLITE_EMAIL = "thara.sri@dome.tu.ac.th"
 S2_API_KEY = ""
 
 def get_common_headers():
@@ -37,7 +37,7 @@ def _enrich_with_semantic_scholar(doi: str) -> dict:
                 time.sleep(5)
                 continue
             else:
-                break # Error อื่นๆ ให้ข้ามเลย
+                break # Skip other errors.
         except requests.RequestException:
             time.sleep(2)
             
@@ -183,7 +183,7 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
                     "doi": doi,
                     "title": item.get("title", "(No Title)"),
                     "authors_text": ", ".join(authors_names),
-                    "authors_struct": authors_struct,# ส่ง List ของ Dict ออกไปให้ Command จัดการ
+                    "authors_struct": authors_struct,# Send a list of dictionaries to the command line for processing.
                     "year": item.get("publication_year"),
                     "venue": venue_name,
                     "url": doi_url,
@@ -194,12 +194,7 @@ def _stream_from_openalex(author: str = None, query: str = None, start_year: int
                 raw_abstract = item.get("abstract_inverted_index")
                 openalex_abstract = _reconstruct_openalex_abstract(raw_abstract)
 
-                enriched = _enrich_with_semantic_scholar(doi)
-
-                final_abstract = openalex_abstract if openalex_abstract else enriched.get("abstract")
-
-                paper_data.update(enriched)
-                paper_data["abstract"] = final_abstract
+                paper_data["abstract"] = openalex_abstract
                 
                 yield paper_data
                 
@@ -300,7 +295,7 @@ def _stream_from_crossref(author: str = None, query: str = None, start_year: int
             yield paper_data
 
         offset += rows_per_page
-        time.sleep(1)
+        time.sleep(0.7)
 
 def stream_papers_from_apis(author: str = None, query: str = None, start_year: int = None, end_year: int = None, source: str = "openalex"):
     if source == "openalex":
