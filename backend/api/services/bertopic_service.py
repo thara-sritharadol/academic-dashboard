@@ -60,7 +60,7 @@ class BERTopicService:
             'analysis', 'model', 'system', 'data', 'application', 'new', 'development',
             'performance', 'conclusion', 'abstract', 'introduction', 'work', 'time',
             'significant', 'shown', 'show', 'demonstrate', 'experiment', 'experimental',
-            'university', 'department', 'author', 'et', 'al', 'figure', 'table', # <-- เติมลูกน้ำที่หายไป
+            'university', 'department', 'author', 'et', 'al', 'figure', 'table',
             'high', 'low', 'large', 'small', 'different', 'various', 'property', 'properties', 'increase', 'effect', 'activity',
             'structure', 'compound', 'condition', 'quality', 'entry', 'contain', 'parameter', 'observe', 'report', 'present', 'evaluate'
         ]
