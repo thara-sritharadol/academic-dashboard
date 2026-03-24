@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import ForceGraph2D from "react-force-graph-2d";
 import api from "../services/api";
+import { useNavigate } from "react-router-dom"; // <-- เพิ่ม import นี้
 import {
   Users,
   ZoomIn,
@@ -12,9 +13,11 @@ import {
 } from "lucide-react";
 
 export default function AuthorNetwork() {
+  const navigate = useNavigate(); // <-- สร้าง instance สำหรับใช้เปลี่ยนหน้า
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [isReady, setIsReady] = useState(false); // <-- เพิ่ม State เพื่อเช็คว่าโหลด Topic เสร็จหรือยัง
 
   // Multi-select Checkbox
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
@@ -23,20 +26,32 @@ export default function AuthorNetwork() {
 
   const fgRef = useRef<any>(null);
 
-  // Pull up a list of all topics and display them in the checkbox (do this once when the page loads).
+  // โหลด Topic ทั้งหมด และตั้งค่า 3 อันดับแรกเป็นค่าเริ่มต้น
   useEffect(() => {
-    api.get("/analytics/topics/").then((res) => setAvailableDomains(res.data));
+    api.get("/analytics/topics/").then((res) => {
+      const domains = res.data;
+      setAvailableDomains(domains);
+
+      if (domains.length > 0) {
+        // เลือก 3 Topic แรกเป็นค่าเริ่มต้น (ปรับตัวเลขได้ตามต้องการ)
+        const initialDomains = domains.slice(0, 3);
+        setSelectedDomains(initialDomains);
+        setPendingDomains(initialDomains);
+      }
+      setIsReady(true); // อนุญาตให้ดึงกราฟได้
+    });
   }, []);
 
-  // Retrieve graph data when selectedDomains are updated (after clicking Apply).
+  // ดึงข้อมูลกราฟ (จะทำงานก็ต่อเมื่อ isReady = true แล้วเท่านั้น)
   useEffect(() => {
+    if (!isReady) return; // กั้นไม่ให้โหลดกราฟจนกว่า Topic จะเซ็ตค่าเริ่มต้นเสร็จ
+
     const fetchNetwork = async () => {
       setLoading(true);
       try {
         const res = await api.get("/network/authors/", {
           params: {
             limit: 200,
-            // Pass an array as a string separated by commas, such as "Topic 1,Topic 3".
             domains:
               selectedDomains.length > 0
                 ? selectedDomains.join(",")
@@ -51,7 +66,7 @@ export default function AuthorNetwork() {
       }
     };
     fetchNetwork();
-  }, [selectedDomains]);
+  }, [selectedDomains, isReady]);
 
   useEffect(() => {
     if (!loading && fgRef.current && graphData.nodes.length > 0) {
@@ -64,7 +79,6 @@ export default function AuthorNetwork() {
   const COLOR_EXTERNAL = "#d1d5db";
   const COLOR_TEXT = "#1f2937";
 
-  // Checkbox
   const toggleDomain = (domain: string) => {
     setPendingDomains((prev) =>
       prev.includes(domain)
@@ -73,13 +87,11 @@ export default function AuthorNetwork() {
     );
   };
 
-  // Apply
   const applyFilter = () => {
     setSelectedDomains(pendingDomains);
     setIsFilterOpen(false);
   };
 
-  // Clear filter
   const clearFilter = () => {
     setPendingDomains([]);
     setSelectedDomains([]);
@@ -130,9 +142,8 @@ export default function AuthorNetwork() {
             )}
           </button>
 
-          {/* Dropdown Menu */}
           {isFilterOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col">
+            <div className="absolute right-0 mt-2 w-96 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden flex flex-col">
               <div className="p-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                 <span className="font-semibold text-slate-700 text-sm">
                   Select Topics
@@ -145,7 +156,6 @@ export default function AuthorNetwork() {
                 </button>
               </div>
 
-              {/* Checkbox List */}
               <div className="max-h-64 overflow-y-auto p-2">
                 {availableDomains.length === 0 ? (
                   <p className="p-2 text-sm text-slate-500 text-center">
@@ -153,8 +163,13 @@ export default function AuthorNetwork() {
                   </p>
                 ) : (
                   availableDomains.map((domainStr) => {
-                    const shortName = domainStr.split(":")[1];
-                    const fullName = domainStr;
+                    // ป้องกัน Error กรณี format string ไม่ตรง
+                    const parts = domainStr.split(":");
+                    const shortName = parts[0] ? parts[0].trim() : domainStr;
+                    const fullName =
+                      parts.length > 1
+                        ? parts.slice(1).join(":").trim()
+                        : domainStr;
                     const isChecked = pendingDomains.includes(domainStr);
 
                     return (
@@ -172,13 +187,13 @@ export default function AuthorNetwork() {
                         </div>
                         <div className="flex-1 text-sm pointer-events-none">
                           <span className="font-medium text-slate-700 block">
-                            {shortName}
+                            Topic {shortName}
                           </span>
                           <span
                             className="text-xs text-slate-400 line-clamp-1"
                             title={fullName}
                           >
-                            {fullName.replace(shortName + ":", "").trim()}
+                            {fullName}
                           </span>
                         </div>
                       </div>
@@ -187,13 +202,12 @@ export default function AuthorNetwork() {
                 )}
               </div>
 
-              {/* Apply adn Clear */}
               <div className="p-3 border-t border-slate-100 bg-slate-50 flex gap-2">
                 <button
                   onClick={clearFilter}
                   className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-md transition-colors"
                 >
-                  Clear
+                  Clear All
                 </button>
                 <button
                   onClick={applyFilter}
@@ -232,7 +246,7 @@ export default function AuthorNetwork() {
           </button>
         </div>
 
-        {!loading && (
+        {!loading && graphData.nodes.length > 0 && (
           <div className="absolute bottom-4 right-4 z-10 bg-white/95 p-4 rounded-xl border border-slate-200 shadow-lg w-56">
             <h3 className="text-sm font-bold text-slate-700 mb-3 uppercase tracking-wider">
               Institution
@@ -281,44 +295,51 @@ export default function AuthorNetwork() {
             graphData={graphData}
             width={
               typeof window !== "undefined" ? window.innerWidth - 300 : 800
-            } //
+            }
             height={
               typeof window !== "undefined" ? window.innerHeight - 150 : 600
-            } //
-            nodeLabel="name" //
-            // Resizing Node sizes and displaying Labels.
+            }
+            nodeLabel="name"
+            // 🔥 เพิ่มการตั้งค่าคลิกแล้วให้ไปยังหน้า AuthorDetail.tsx
+            onNodeClick={(node: any) => {
+              navigate(`/authors/${node.id}`);
+            }}
+            // 🔥 เมื่อนำเมาส์ไปชี้ที่ Node ให้เปลี่ยน Cursor เป็นแบบ Pointer ให้ดูน่ากด
+            onNodeHover={(node: any) => {
+              const canvas = fgRef.current?.canvas;
+              if (canvas) {
+                canvas.style.cursor = node ? "pointer" : "default";
+              }
+            }}
             nodeCanvasObject={(node: any, ctx, globalScale) => {
-              const label = node.name; //
-              const isTu = node.faculty && node.faculty.trim() !== ""; //
+              const label = node.name;
+              const isTu = node.faculty && node.faculty.trim() !== "";
 
-              // makes the differences in node sizes more apparent.
               const nodeRadius = Math.max(3, (node.val || 1) * 0.8 + 2);
 
-              ctx.beginPath(); //
-              ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false); //
-              ctx.fillStyle = isTu ? COLOR_TU : COLOR_EXTERNAL; //
-              ctx.fill(); //
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI, false);
+              ctx.fillStyle = isTu ? COLOR_TU : COLOR_EXTERNAL;
+              ctx.fill();
 
-              ctx.lineWidth = 1 / globalScale; //
-              ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af"; //
-              ctx.stroke(); //
+              ctx.lineWidth = 1 / globalScale;
+              ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af";
+              ctx.stroke();
 
-              // Show only the names of those who are zoomed in closely, or those who are major nodes (those with a lot of contributions).
               if (globalScale > 2 || (globalScale > 1.2 && node.val > 3)) {
-                const fontSize = 11 / globalScale; //
-                ctx.font = `${fontSize}px Inter, Sans-Serif`; //
-                ctx.textAlign = "center"; //
-                ctx.textBaseline = "top"; //
-                ctx.fillStyle = COLOR_TEXT; //
+                const fontSize = 11 / globalScale;
+                ctx.font = `${fontSize}px Inter, Sans-Serif`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "top";
+                ctx.fillStyle = COLOR_TEXT;
                 ctx.fillText(
-                  label, //
-                  node.x, //
-                  node.y + nodeRadius + 3 / globalScale, //
+                  label,
+                  node.x,
+                  node.y + nodeRadius + 3 / globalScale,
                 );
               }
             }}
             linkColor={(link: any) => {
-              // Make sure that source/target is not just a string ID.
               const source =
                 typeof link.source === "object" ? link.source : null;
               const target =
@@ -328,13 +349,13 @@ export default function AuthorNetwork() {
               const sourceIsTu = source.faculty && source.faculty.trim() !== "";
               const targetIsTu = target.faculty && target.faculty.trim() !== "";
 
-              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)"; // The TU-TU line be light blue.
-              return "rgba(148, 163, 184, 0.5)"; // Make the TU-External line a slightly darker gray so it's more visible.
+              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)";
+              return "rgba(148, 163, 184, 0.5)";
             }}
-            linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2} //
-            d3VelocityDecay={0.25} //
-            cooldownTicks={120} //
-            onEngineStop={() => fgRef.current?.zoomToFit(400, 70)} //
+            linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2}
+            d3VelocityDecay={0.25}
+            cooldownTicks={120}
+            onEngineStop={() => fgRef.current?.zoomToFit(400, 70)}
           />
         )}
       </div>

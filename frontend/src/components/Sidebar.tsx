@@ -11,7 +11,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <nav className="w-64 bg-white border-r border-slate-200 min-h-screen p-4 flex flex-col">
+    <nav className="w-64 bg-white border-r border-slate-200 h-screen sticky top-0 p-4 flex flex-col">
       <div className="mb-8 px-4 mt-2">
         <h1 className="text-2xl font-bold text-blue-600">TUTopic Dash</h1>
         <p className="text-sm text-slate-500">Research Analytics</p>
