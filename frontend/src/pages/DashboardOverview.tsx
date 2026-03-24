@@ -234,7 +234,7 @@ export default function DashboardOverview() {
                   {/* Draw lines only on the selected Topics in selectedDomains. */}
                   {domainInfo
                     .filter((d) => selectedDomains.includes(d.fullKey))
-                    .map((domain, index) => {
+                    .map((domain, _index) => {
                       // Find the color index that matches the initial color, so that the color doesn't change when switching filters.
                       const colorIndex = domainInfo.findIndex(
                         (d) => d.fullKey === domain.fullKey,
