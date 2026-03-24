@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { Search, Filter, BookOpen, ExternalLink } from "lucide-react";
+import {
+  Search,
+  Filter,
+  BookOpen,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"; //
 import api from "../services/api";
 import type { Paper } from "../types/models";
-import PaperDetail from "./PaperDetail";
 import { Link } from "react-router-dom";
 
 export default function PaperSearch() {
@@ -14,11 +20,19 @@ export default function PaperSearch() {
   const [selectedDomain, setSelectedDomain] = useState("");
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
+  // State For Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 20; //
+
   // Fetch From API
-  const fetchPapers = async (overrideDomain?: string) => {
+  const fetchPapers = async (
+    overrideDomain?: string,
+    pageNumber: number = 1,
+  ) => {
     setLoading(true);
 
-    // If a value is entered, use that value. If not, use selectedDomain in State.
     const activeDomain =
       overrideDomain !== undefined ? overrideDomain : selectedDomain;
 
@@ -27,9 +41,19 @@ export default function PaperSearch() {
         params: {
           q: searchQuery || undefined,
           domain: activeDomain || undefined,
+          page: pageNumber,
         },
       });
-      setPapers(response.data);
+
+      if (response.data && response.data.results) {
+        setPapers(response.data.results);
+        setTotalCount(response.data.count);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
+      } else {
+        setPapers(response.data);
+        setTotalCount(response.data.length);
+        setTotalPages(1);
+      }
     } catch (error) {
       console.error("Error fetching papers:", error);
     } finally {
@@ -41,15 +65,12 @@ export default function PaperSearch() {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // retrieve the list of Topics.
         const topicsRes = await api.get("/analytics/topics/");
         setAvailableDomains(topicsRes.data);
-
-        // Call the existing fetchPapers() function (to avoid writing duplicate code).
         await fetchPapers();
       } catch (error) {
         console.error("Error fetching initial data:", error);
-        setLoading(false); // Prevent the page from freezing during loading if an error occurs.
+        setLoading(false);
       }
     };
 
@@ -57,10 +78,18 @@ export default function PaperSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // The function is managed when you press Enter in the search box.
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      fetchPapers();
+      setCurrentPage(1); //
+      fetchPapers(selectedDomain, 1);
+    }
+  };
+
+  // ฟังก์ชันสำหรับเปลี่ยนหน้า
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+      fetchPapers(selectedDomain, newPage);
     }
   };
 
@@ -75,7 +104,6 @@ export default function PaperSearch() {
 
       {/* Search Bar & Filters */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 mb-6 shrink-0">
-        {/* Search */}
         <div className="flex-1 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search size={18} className="text-slate-400" />
@@ -90,7 +118,6 @@ export default function PaperSearch() {
           />
         </div>
 
-        {/* Filter Domain */}
         <div className="w-full md:w-64 relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Filter size={18} className="text-slate-400" />
@@ -100,13 +127,13 @@ export default function PaperSearch() {
             value={selectedDomain}
             onChange={(e) => {
               const newValue = e.target.value;
-              setSelectedDomain(newValue); // Update the State to show on the screen.
-              fetchPapers(newValue); // Call the API using the new value immediately! No need to wait for State.
+              setSelectedDomain(newValue);
+              setCurrentPage(1);
+              fetchPapers(newValue, 1);
             }}
           >
             <option value="">All Domains</option>
             {availableDomains.map((domainStr) => {
-              // Use Topic Name LLM
               const shortName = domainStr.split(":")[1];
               return (
                 <option key={domainStr} value={domainStr}>
@@ -114,7 +141,6 @@ export default function PaperSearch() {
                 </option>
               );
             })}
-            {/* Domain Option */}
           </select>
         </div>
       </div>
@@ -133,100 +159,149 @@ export default function PaperSearch() {
             No papers found matching your criteria.
           </div>
         ) : (
-          <div className="overflow-x-auto flex-1 custom-scrollbar">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead className="bg-slate-50 sticky top-0 z-10">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-2/5"
-                  >
-                    Paper Title
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-1/5"
-                  >
-                    Authors
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                  >
-                    Year
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                  >
-                    Discovered Domains
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                  >
-                    Citations
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-slate-100">
-                {papers.map((paper) => (
-                  <tr
-                    key={paper.id}
-                    className="hover:bg-slate-50 transition-colors group"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-semibold text-slate-900 line-clamp-2">
-                        {paper.title}
-                      </div>
-                      {/* In the future, create a button that allows you to click to the Details page. */}
-                      <Link
-                        to={`/papers/${paper.id}`}
-                        className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center gap-1"
-                      >
-                        View details <ExternalLink size={12} />
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-slate-600 line-clamp-2">
-                        {paper.authors_list?.join(", ") || "Unknown Author"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                      <div className="text-sm text-slate-700">
-                        {paper.year || "-"}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1.5">
-                        {paper.predicted_multi_labels?.map((label, idx) => {
-                          // The badge colors are slightly randomized according to the label name.
-                          const isCS = label.toLowerCase().includes("computer");
-                          const colorClass = isCS
-                            ? "bg-blue-100 text-blue-700 border-blue-200"
-                            : "bg-emerald-100 text-emerald-700 border-emerald-200";
-
-                          return (
-                            <span
-                              key={idx}
-                              className={`px-2.5 py-1 inline-flex text-[11px] leading-4 font-semibold rounded-full border ${colorClass}`}
-                            >
-                              {label.split(":")[1]} {/* Topic */}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <div className="text-sm font-medium text-slate-700">
-                        {paper.citation_count}
-                      </div>
-                    </td>
+          <>
+            <div className="overflow-x-auto flex-1 custom-scrollbar">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50 sticky top-0 z-10">
+                  <tr>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-2/5"
+                    >
+                      Paper Title
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-1/5"
+                    >
+                      Authors
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"
+                    >
+                      Year
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"
+                    >
+                      Discovered Domains
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider"
+                    >
+                      Citations
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-100">
+                  {papers.map((paper) => (
+                    <tr
+                      key={paper.id}
+                      className="hover:bg-slate-50 transition-colors group"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-semibold text-slate-900 line-clamp-2">
+                          {paper.title}
+                        </div>
+                        <Link
+                          to={`/papers/${paper.id}`}
+                          className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center gap-1"
+                        >
+                          View details <ExternalLink size={12} />
+                        </Link>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-slate-600 line-clamp-2">
+                          {paper.authors_list?.join(", ") || "Unknown Author"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-center whitespace-nowrap">
+                        <div className="text-sm text-slate-700">
+                          {paper.year || "-"}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1.5">
+                          {paper.predicted_multi_labels?.map((label, idx) => {
+                            const isCS = label
+                              .toLowerCase()
+                              .includes("computer");
+                            const colorClass = isCS
+                              ? "bg-blue-100 text-blue-700 border-blue-200"
+                              : "bg-emerald-100 text-emerald-700 border-emerald-200";
+                            return (
+                              <span
+                                key={idx}
+                                className={`px-2.5 py-1 inline-flex text-[11px] leading-4 font-semibold rounded-full border ${colorClass}`}
+                              >
+                                {label.split(":")[1]}
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right whitespace-nowrap">
+                        <div className="text-sm font-medium text-slate-700">
+                          {paper.citation_count}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="bg-white px-6 py-4 border-t border-slate-200 flex items-center justify-between shrink-0">
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-slate-700">
+                    Showing{" "}
+                    <span className="font-semibold">
+                      {(currentPage - 1) * pageSize + 1}
+                    </span>{" "}
+                    to{" "}
+                    <span className="font-semibold">
+                      {Math.min(currentPage * pageSize, totalCount)}
+                    </span>{" "}
+                    of <span className="font-semibold">{totalCount}</span>{" "}
+                    results
+                  </p>
+                </div>
+                <div>
+                  <nav
+                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                    aria-label="Pagination"
+                  >
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium ${currentPage === 1 ? "text-slate-300 cursor-not-allowed" : "text-slate-500 hover:bg-slate-50"}`}
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeft size={18} aria-hidden="true" />
+                    </button>
+
+                    <span className="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium ${currentPage === totalPages ? "text-slate-300 cursor-not-allowed" : "text-slate-500 hover:bg-slate-50"}`}
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRight size={18} aria-hidden="true" />
+                    </button>
+                  </nav>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>

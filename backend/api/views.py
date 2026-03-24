@@ -3,6 +3,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.db.models import Q
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Paper, Author
 from .serializers import AuthorDetailSerializer, PaperListSerializer, PaperDetailSerializer, AuthorSerializer
@@ -11,7 +12,13 @@ from api.services.analytics_service import AnalyticsService
 # ==========================================
 # API for Paper (Search & Detail)
 # ==========================================
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
 class PaperViewSet(viewsets.ReadOnlyModelViewSet):
+    pagination_class = StandardResultsSetPagination
     def get_serializer_class(self):
         if self.action == 'retrieve': return PaperDetailSerializer
         return PaperListSerializer
