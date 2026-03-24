@@ -107,3 +107,8 @@ def top_authors(request):
             "primary_cluster": a.primary_cluster
         })
     return Response(data)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def simple_health_check(request):
+    return Response({"status": "ok"}, status=200)

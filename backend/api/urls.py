@@ -19,4 +19,5 @@ urlpatterns = [
     path('analytics/topics/', views.get_all_topics, name='all-topics'),
     path('analytics/top-authors/', views.top_authors),
     path('network/authors/', views.author_network, name='author-network'),
+    path('health/', views.simple_health_check, name='health-check'),
 ]
