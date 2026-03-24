@@ -161,7 +161,7 @@ export default function DashboardOverview() {
       {/* Hero Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-4 bg-blue-50 text-blue-600 rounded-lg">
+          <div className="p-4 bg-red-50 text-red-600 rounded-lg">
             <FileText size={24} />
           </div>
           <div>
@@ -183,7 +183,7 @@ export default function DashboardOverview() {
           </div>
         </div>
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="p-4 bg-amber-50 text-amber-600 rounded-lg">
+          <div className="p-4 bg-yellow-50 text-yellow-600 rounded-lg">
             <Layers size={24} />
           </div>
           <div>
@@ -294,7 +294,7 @@ export default function DashboardOverview() {
                   key={domain.fullKey}
                   onClick={() => toggleDomain(domain.fullKey)}
                   className={`p-3 rounded-lg border cursor-pointer transition-all flex items-start gap-3
-                    ${isSelected ? "bg-slate-50 border-blue-200" : "bg-white border-slate-100 hover:border-slate-300 opacity-60 hover:opacity-100"}`}
+                    ${isSelected ? "bg-yellow-50 border-yellow-200" : "bg-white border-slate-100 hover:border-slate-300 opacity-60 hover:opacity-100"}`}
                 >
                   <div
                     className="mt-0.5"
@@ -409,7 +409,7 @@ export default function DashboardOverview() {
                 Authors with the highest number of publications
               </p>
             </div>
-            <span className="text-sm text-blue-600 hover:text-blue-800 font-medium cursor-pointer">
+            <span className="text-sm text-red-600 hover:text-red-800 font-medium cursor-pointer">
               View All
             </span>
           </div>
@@ -424,7 +424,7 @@ export default function DashboardOverview() {
                 <Link
                   key={author.id}
                   to={`/authors/${author.id}`}
-                  className="flex items-center p-3 rounded-lg border border-slate-100 hover:bg-slate-50 hover:border-blue-200 transition-all group"
+                  className="flex items-center p-3 rounded-lg border border-slate-100 hover:bg-red-50 hover:border-red-200 transition-all group"
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 shrink-0
@@ -442,7 +442,7 @@ export default function DashboardOverview() {
                   </div>
 
                   <div className="flex-1 min-w-0 pr-4">
-                    <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
+                    <h3 className="font-bold text-slate-800 group-hover:text-red-600 transition-colors truncate">
                       {author.name}
                     </h3>
                     <p className="text-xs text-slate-500 truncate">
@@ -456,7 +456,7 @@ export default function DashboardOverview() {
                     {author.primary_cluster !== null &&
                       author.primary_cluster !== undefined && (
                         <span
-                          className="hidden sm:inline-block bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded text-[11px] font-semibold max-w-[150px] truncate"
+                          className="hidden sm:inline-block bg-yellow-50 text-yellow-700 border border-yellow-100 px-2.5 py-1 rounded text-[11px] font-semibold max-w-[150px] truncate"
                           title={topicName} // Add a title in case the name is too long and gets hidden, so you can hover your mouse over it to see the full name.
                         >
                           {topicName}

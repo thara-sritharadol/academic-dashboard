@@ -68,7 +68,7 @@ export default function AuthorDetail() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -122,27 +122,27 @@ export default function AuthorDetail() {
         {/* Back */}
         <Link
           to="/network"
-          className="inline-flex items-center text-slate-500 hover:text-blue-600 transition-colors mb-4"
+          className="inline-flex items-center text-slate-500 hover:text-red-600 transition-colors mb-4"
         >
           <ChevronLeft size={20} className="mr-1" /> Back to Network
         </Link>
 
         {/* HEADER SECTION*/}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -translate-y-1/2 translate-x-1/3 opacity-50 blur-3xl pointer-events-none"></div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-50 rounded-full -translate-y-1/2 translate-x-1/3 opacity-50 blur-3xl pointer-events-none"></div>
 
           <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
-            <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center shrink-0 border-4 border-white shadow-md">
-              <User size={40} className="text-blue-600" />
+            <div className="w-24 h-24 rounded-full bg-yellow-100 flex items-center justify-center shrink-0 border-4 border-white shadow-md">
+              <User size={40} className="text-yellow-600" />
             </div>
 
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-2">
-                <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                   <Award size={14} /> {author.works_count} Publications
                 </span>
                 {primaryClusterName && (
-                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                     Expertise: {primaryClusterName}
                   </span>
                 )}
@@ -221,8 +221,8 @@ export default function AuthorDetail() {
                       <Radar
                         name="Expertise"
                         dataKey="probability"
-                        stroke="#059669"
-                        fill="#10b981"
+                        stroke="#c79f20"
+                        fill="#FFD13F"
                         fillOpacity={0.4}
                       />
                     </RadarChart>
@@ -240,7 +240,7 @@ export default function AuthorDetail() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6">
-                <BookOpen className="text-blue-600" /> Published Papers
+                <BookOpen className="text-red-600" /> Published Papers
               </h2>
 
               {author.papers && author.papers.length > 0 ? (
@@ -249,11 +249,11 @@ export default function AuthorDetail() {
                     <Link
                       key={paper.id}
                       to={`/papers/${paper.id}`}
-                      className="block p-5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-blue-200 hover:shadow-md transition-all group"
+                      className="block p-5 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-red-200 hover:shadow-md transition-all group"
                     >
                       <div className="flex justify-between items-start gap-4">
                         <div className="flex-1">
-                          <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors line-clamp-2 mb-2">
+                          <h3 className="font-bold text-slate-800 group-hover:text-red-600 transition-colors line-clamp-2 mb-2">
                             {paper.title}
                           </h3>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
@@ -269,7 +269,7 @@ export default function AuthorDetail() {
 
                         {paper.cluster_label && (
                           <div className="shrink-0 hidden sm:block">
-                            <span className="bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
+                            <span className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
                               {paper.cluster_label.split(":")[1] ||
                                 paper.cluster_label}
                             </span>
@@ -278,7 +278,7 @@ export default function AuthorDetail() {
 
                         <ExternalLink
                           size={18}
-                          className="text-slate-300 group-hover:text-blue-500 shrink-0 mt-1"
+                          className="text-slate-300 group-hover:text-red-500 shrink-0 mt-1"
                         />
                       </div>
                     </Link>

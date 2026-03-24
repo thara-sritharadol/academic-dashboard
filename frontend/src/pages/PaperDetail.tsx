@@ -52,7 +52,7 @@ export default function PaperDetail() {
 
         setTopicMap(map);
       } catch {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching data:");
       } finally {
         setLoading(false);
       }
@@ -78,7 +78,7 @@ export default function PaperDetail() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
       </div>
     );
   }
@@ -140,15 +140,15 @@ export default function PaperDetail() {
         {/* Back */}
         <Link
           to="/papers"
-          className="inline-flex items-center text-slate-500 hover:text-blue-600 transition-colors mb-4"
+          className="inline-flex items-center text-slate-500 hover:text-red-600 transition-colors mb-4"
         >
-          <ChevronLeft size={20} className="mr-1" /> Back to Search
+          <ChevronLeft size={20} className="mr-1" /> Back
         </Link>
 
         {/* HEADER SECTION */}
         <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
           <div className="flex flex-wrap items-center gap-3 mb-4 text-sm font-medium">
-            <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+            <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
               {paper.cluster_label || "Uncategorized"}
             </span>
             <span className="flex items-center text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
@@ -170,15 +170,13 @@ export default function PaperDetail() {
                 key={author.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${
                   author.faculty
-                    ? "bg-blue-50 border-blue-100 text-blue-800"
+                    ? "bg-red-50 border-red-100 text-red-800"
                     : "bg-slate-50 border-slate-200 text-slate-700"
                 }`}
               >
                 <Users
                   size={16}
-                  className={
-                    author.faculty ? "text-blue-500" : "text-slate-400"
-                  }
+                  className={author.faculty ? "text-red-500" : "text-slate-400"}
                 />
                 <Link to={`/authors/${author.id}`}>
                   <div className="font-semibold text-sm">{author.name}</div>
@@ -197,7 +195,7 @@ export default function PaperDetail() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
               <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <BookOpen className="text-blue-600" /> Abstract
+                <BookOpen className="text-red-600" /> Abstract
               </h2>
               <p className="text-slate-600 leading-relaxed text-justify">
                 {paper.abstract || "No abstract available for this paper."}
@@ -209,7 +207,7 @@ export default function PaperDetail() {
               paper.predicted_multi_labels.length > 0 && (
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
                   <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                    <Tag className="text-blue-600" /> Related Topics
+                    <Tag className="text-red-600" /> Related Topics
                   </h2>
                   <div className="flex flex-wrap gap-2">
                     {paper.predicted_multi_labels.map(

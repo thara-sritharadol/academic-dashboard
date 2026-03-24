@@ -75,7 +75,7 @@ export default function AuthorNetwork() {
     }
   }, [graphData, loading]);
 
-  const COLOR_TU = "#2563eb";
+  const COLOR_TU = "#FFD13F";
   const COLOR_EXTERNAL = "#d1d5db";
   const COLOR_TEXT = "#1f2937";
 
@@ -103,7 +103,7 @@ export default function AuthorNetwork() {
       <div className="p-8 pb-4 shrink-0 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Users className="text-blue-600" /> TU Collaboration Network
+            <Users className="text-red-600" /> TU Collaboration Network
           </h1>
           <p className="text-slate-500">
             Node size: paper count. Line thickness: collaboration frequency.
@@ -131,12 +131,12 @@ export default function AuthorNetwork() {
             <Filter
               size={18}
               className={
-                selectedDomains.length > 0 ? "text-blue-600" : "text-slate-400"
+                selectedDomains.length > 0 ? "text-red-600" : "text-red-400"
               }
             />
             Filter Topics{" "}
             {selectedDomains.length > 0 && (
-              <span className="bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs">
+              <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs">
                 {selectedDomains.length}
               </span>
             )}
@@ -179,7 +179,7 @@ export default function AuthorNetwork() {
                         className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group"
                       >
                         <div
-                          className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center border ${isChecked ? "bg-blue-600 border-blue-600" : "border-slate-300 group-hover:border-blue-400"}`}
+                          className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center border ${isChecked ? "bg-yellow-600 border-yellow-600" : "border-slate-300 group-hover:border-blue-400"}`}
                         >
                           {isChecked && (
                             <Check size={12} className="text-white" />
@@ -187,7 +187,7 @@ export default function AuthorNetwork() {
                         </div>
                         <div className="flex-1 text-sm pointer-events-none">
                           <span className="font-medium text-slate-700 block">
-                            Topic {shortName}
+                            {shortName}
                           </span>
                           <span
                             className="text-xs text-slate-400 line-clamp-1"
@@ -211,7 +211,7 @@ export default function AuthorNetwork() {
                 </button>
                 <button
                   onClick={applyFilter}
-                  className="flex-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
+                  className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md shadow-sm transition-colors"
                 >
                   Apply Filter
                 </button>
@@ -323,7 +323,7 @@ export default function AuthorNetwork() {
               ctx.fill();
 
               ctx.lineWidth = 1 / globalScale;
-              ctx.strokeStyle = isTu ? "#1e40af" : "#9ca3af";
+              ctx.strokeStyle = isTu ? "#C3002F" : "#9ca3af";
               ctx.stroke();
 
               if (globalScale > 2 || (globalScale > 1.2 && node.val > 3)) {
@@ -349,7 +349,7 @@ export default function AuthorNetwork() {
               const sourceIsTu = source.faculty && source.faculty.trim() !== "";
               const targetIsTu = target.faculty && target.faculty.trim() !== "";
 
-              if (sourceIsTu && targetIsTu) return "rgba(37, 99, 235, 0.4)";
+              if (sourceIsTu && targetIsTu) return "rgba(195, 0, 47, 1)";
               return "rgba(148, 163, 184, 0.5)";
             }}
             linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2}
