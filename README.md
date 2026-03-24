@@ -20,6 +20,7 @@ The pipeline runs locally (or via scheduled batch jobs) to process the data and 
    * Utilizes **SpaCy** for tokenization, lemmatization, and stop-word removal.
 3. **Machine Learning (Topic Modeling):** * Explores and compares multiple clustering algorithms including **BERTopic**, **LDA (Latent Dirichlet Allocation)**, and **NMF (Non-negative Matrix Factorization)** to discover hidden thematic structures within the papers.
    * Assigns primary and secondary topic domains to each paper and author.
+   * Naming topic domains using keywords via **LLM (Gemini)**.
 4. **Load (Database Seeding):** * Maps the clustered data into relational database models.
    * Automatically pushes the structured data to a remote **PostgreSQL** instance (Neon.tech) for production use.
 
