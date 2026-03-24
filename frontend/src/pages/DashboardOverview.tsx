@@ -6,10 +6,13 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   Legend,
   ResponsiveContainer,
   Brush,
+  PieChart,
+  Pie,
+  Cell, // <-- เพิ่ม 3 ตัวนี้เข้ามา
 } from "recharts";
 import api from "../services/api";
 import type { DashboardSummary } from "../types/models";
@@ -85,6 +88,35 @@ export default function DashboardOverview() {
     return `hsl(${hue}, 70%, 50%)`;
   };
 
+  const overallTopicDistribution = useMemo(() => {
+    if (trends.length === 0 || domainInfo.length === 0) return [];
+
+    const totals: Record<string, number> = {};
+
+    // Loop by adding the numbers from every year together.
+    trends.forEach((yearData) => {
+      Object.keys(yearData).forEach((key) => {
+        if (key !== "year") {
+          totals[key] = (totals[key] || 0) + (yearData[key] as number);
+        }
+      });
+    });
+
+    // Convert the object to an array and match the colors to the line chart exactly.
+    return Object.entries(totals)
+      .map(([key, value]) => {
+        const dInfo = domainInfo.find((d) => d.fullKey === key);
+        const index = domainInfo.findIndex((d) => d.fullKey === key);
+        return {
+          name: dInfo ? dInfo.names : key,
+          value,
+          fill: getDynamicColor(index > -1 ? index : 0), // Use the exact same color as the graph line
+        };
+      })
+      .filter((item) => item.value > 0) // Take only the valuable ones.
+      .sort((a, b) => b.value - a.value); // Sorted from highest to lowest.
+  }, [trends, domainInfo]);
+
   useEffect(() => {
     if (domainInfo.length > 0 && selectedDomains.length === 0) {
       setSelectedDomains(domainInfo.slice(0, 5).map((d) => d.fullKey));
@@ -146,7 +178,7 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Graph and Comtroller */}
+      {/* Graph and Controller */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Line */}
         <div className="lg:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
@@ -171,7 +203,7 @@ export default function DashboardOverview() {
                     tickMargin={10}
                   />
                   <YAxis tick={{ fill: "#64748b" }} tickMargin={10} />
-                  <Tooltip
+                  <RechartsTooltip
                     contentStyle={{
                       borderRadius: "8px",
                       border: "none",
@@ -290,6 +322,67 @@ export default function DashboardOverview() {
               Clear All
             </button>
           </div>
+        </div>
+      </div>
+      {/* Doughnut Chart & Top Authors Placeholder */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+        {/* Doughnut Chart*/}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <h2 className="text-lg font-bold text-slate-800 mb-1">
+            Overall Distribution
+          </h2>
+          <p className="text-xs text-slate-500 mb-4">
+            All-time publications by domain
+          </p>
+
+          <div className="flex-1 min-h-[250px] w-full relative">
+            {overallTopicDistribution.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={overallTopicDistribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                  />
+
+                  <RechartsTooltip
+                    formatter={(value: any, name: any) => [
+                      `${value} Papers`,
+                      name,
+                    ]}
+                    contentStyle={{
+                      borderRadius: "8px",
+                      border: "none",
+                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+                No data available
+              </div>
+            )}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <span className="text-2xl font-bold text-slate-700">
+                {overallTopicDistribution.length}
+              </span>
+              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
+                Topics
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Placeholder For Top Authors */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-slate-400 border-dashed">
+          <Users size={32} className="mb-2 opacity-50" />
+          <p>Top Authors Table will go here...</p>
         </div>
       </div>
     </div>

@@ -70,8 +70,8 @@ class BERTopicService:
         self.vectorizer_model = CountVectorizer(
             stop_words=self.custom_stopwords, 
             ngram_range=(1, 2),
-            min_df=5,
-            max_df=0.7
+            #min_df=5,
+            #max_df=0.7
         )
 
     def spacy_tokenizer(self, text):
