@@ -81,3 +81,22 @@ def author_network(request):
     domains_param = request.query_params.get('domains', None) 
     data = AnalyticsService.get_author_network(limit, domains_param)
     return Response(data)
+
+from django.db.models import Count
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def top_authors(request):
+    # count the number of papers, sort them from highest to lowest, and then select only the top 5.
+    top_authors_qs = Author.objects.annotate(paper_count=Count('papers')).order_by('-paper_count')[:5]
+    
+    data = []
+    for a in top_authors_qs:
+        data.append({
+            "id": a.id,
+            "name": a.name,
+            "faculty": a.faculty,
+            "works_count": a.paper_count,
+            "primary_cluster": a.primary_cluster
+        })
+    return Response(data)

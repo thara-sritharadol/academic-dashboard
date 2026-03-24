@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { FileText, Users, Layers, CheckSquare, Square } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -12,7 +13,6 @@ import {
   Brush,
   PieChart,
   Pie,
-  Cell, // <-- เพิ่ม 3 ตัวนี้เข้ามา
 } from "recharts";
 import api from "../services/api";
 import type { DashboardSummary } from "../types/models";
@@ -24,7 +24,8 @@ export default function DashboardOverview() {
 
   // State For Topic
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
-
+  const [topAuthors, setTopAuthors] = useState<any[]>([]);
+  const [topicMap, setTopicMap] = useState<Record<string, string>>({});
   const processedTrends = useMemo(() => {
     if (trends.length === 0) return [];
 
@@ -51,12 +52,29 @@ export default function DashboardOverview() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [summaryRes, trendsRes] = await Promise.all([
-          api.get("/analytics/summary/"),
-          api.get("/analytics/domain-trends/"),
-        ]);
+        const [summaryRes, trendsRes, topAuthorsRes, topicsRes] =
+          await Promise.all([
+            api.get("/analytics/summary/"),
+            api.get("/analytics/domain-trends/"),
+            api.get("/analytics/top-authors/"),
+            api.get("/analytics/topics/"),
+          ]);
         setSummary(summaryRes.data);
         setTrends(trendsRes.data);
+        setTopAuthors(topAuthorsRes.data);
+
+        const map: Record<string, string> = {};
+        if (Array.isArray(topicsRes.data)) {
+          topicsRes.data.forEach((topicStr: string) => {
+            const match = topicStr.match(/(-?\d+)\s*:\s*(.+)/);
+            if (match) {
+              const topicId = match[1];
+              const topicName = match[2].trim();
+              map[topicId] = topicName;
+            }
+          });
+        }
+        setTopicMap(map);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -108,7 +126,8 @@ export default function DashboardOverview() {
         const dInfo = domainInfo.find((d) => d.fullKey === key);
         const index = domainInfo.findIndex((d) => d.fullKey === key);
         return {
-          name: dInfo ? dInfo.names : key,
+          name:
+            dInfo && dInfo.names ? dInfo.names : dInfo ? dInfo.shortName : key,
           value,
           fill: getDynamicColor(index > -1 ? index : 0), // Use the exact same color as the graph line
         };
@@ -379,10 +398,79 @@ export default function DashboardOverview() {
           </div>
         </div>
 
-        {/* Placeholder For Top Authors */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center text-slate-400 border-dashed">
-          <Users size={32} className="mb-2 opacity-50" />
-          <p>Top Authors Table will go here...</p>
+        {/* Top Authors Leaderboard */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">
+                Top Researchers
+              </h2>
+              <p className="text-xs text-slate-500">
+                Authors with the highest number of publications
+              </p>
+            </div>
+            <span className="text-sm text-blue-600 hover:text-blue-800 font-medium cursor-pointer">
+              View All
+            </span>
+          </div>
+
+          <div className="flex-1 flex flex-col gap-3 justify-center">
+            {topAuthors.map((author, index) => {
+              const cleanId = String(author.primary_cluster).trim();
+              const topicName =
+                topicMap[cleanId] || `Topic ${author.primary_cluster}`;
+
+              return (
+                <Link
+                  key={author.id}
+                  to={`/authors/${author.id}`}
+                  className="flex items-center p-3 rounded-lg border border-slate-100 hover:bg-slate-50 hover:border-blue-200 transition-all group"
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 shrink-0
+                    ${
+                      index === 0
+                        ? "bg-amber-100 text-amber-600"
+                        : index === 1
+                          ? "bg-slate-200 text-slate-600"
+                          : index === 2
+                            ? "bg-orange-100 text-orange-600"
+                            : "bg-slate-100 text-slate-400"
+                    }`}
+                  >
+                    #{index + 1}
+                  </div>
+
+                  <div className="flex-1 min-w-0 pr-4">
+                    <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors truncate">
+                      {author.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 truncate">
+                      {author.faculty || "External Researcher"}
+                    </p>
+                  </div>
+
+                  {/* Statistics and Expertise Labels */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    {/* Make sure the value is not null or undefined before showing the label. */}
+                    {author.primary_cluster !== null &&
+                      author.primary_cluster !== undefined && (
+                        <span
+                          className="hidden sm:inline-block bg-blue-50 text-blue-700 border border-blue-100 px-2.5 py-1 rounded text-[11px] font-semibold max-w-[150px] truncate"
+                          title={topicName} // Add a title in case the name is too long and gets hidden, so you can hover your mouse over it to see the full name.
+                        >
+                          {topicName}
+                        </span>
+                      )}
+                    <div className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-lg text-sm font-bold text-slate-700">
+                      <FileText size={14} className="text-slate-400" />
+                      {author.works_count}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
