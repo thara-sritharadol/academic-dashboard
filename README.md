@@ -1,6 +1,6 @@
 # Academic Network: Data Pipeline & Machine Learning
 [![Django](https://img.shields.io/badge/Django-092E20?style=for-the-badge&logo=django&logoColor=green)]()
-[![React](https://img.shields.io/badge/-ReactJs-61DAFB?logo=react&logoColor=white&style=for-the-badge)]()
+[![React](https://img.shields.io/badge/Tech-React%20%2B%20TypeScript-61DAFB?style=for-the-badge&logo=react&logoColor=black)]()
 [![HuggingFace](https://img.shields.io/badge/-HuggingFace-3B4252?style=flat&logo=huggingface&logoColor=)]()
 
 **Part of the Academic Collaboration Network Dashboard Project**
