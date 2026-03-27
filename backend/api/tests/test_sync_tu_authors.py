@@ -5,6 +5,8 @@ from django.core.management.base import CommandError
 
 COMMAND_NAME = 'sync_tu_authors'
 
+#Test CI
+
 def test_command_success(mocker):
 
     mock_service_class = mocker.patch('api.management.commands.sync_tu_authors.TUSyncService')
