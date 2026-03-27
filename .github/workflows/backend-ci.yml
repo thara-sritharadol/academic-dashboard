@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "backend/**"
+      - ".github/workflows/**"
 
 jobs:
   test-backend:
@@ -15,6 +16,7 @@ jobs:
         working-directory: ./backend
 
     env:
+      PYTHONPATH: ${{ github.workspace }}/backend
       DJANGO_SETTINGS_MODULE: backend.settings
       ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
       TU_API_KEY: ${{ secrets.TU_API_KEY }}
@@ -39,4 +41,4 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          pytest tests/
+          python -m pytest tests/
