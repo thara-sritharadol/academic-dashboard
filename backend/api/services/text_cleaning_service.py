@@ -10,5 +10,6 @@ class TextCleaningService:
         # Delete HTML/XML tags
         cleaned_text = re.sub(r'<.*?>', ' ', text)
         cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
+        cleaned_text = re.sub(r'\s+([.,;:?!])', r'\1', cleaned_text)
         
         return cleaned_text
