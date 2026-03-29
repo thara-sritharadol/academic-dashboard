@@ -4,7 +4,9 @@ from unittest.mock import MagicMock
 heavy_modules = [
     'bertopic', 'umap', 'spacy', 'sklearn', 'sklearn.feature_extraction.text',
     'gensim', 'gensim.models.coherencemodel', 'gensim.corpora.dictionary',
-    'plotly.express', 'matplotlib.pyplot', 'seaborn', 'pandas'
+    'plotly.express', 'matplotlib.pyplot', 'seaborn', 'pandas', 'google-ai-generativelanguage',
+    'google-api-core', 'google-api-python-client', 'google-auth', 'google-auth-httplib2', 'google-generativeai',
+    'googleapis-common-protos'
 ]
 
 for mod in heavy_modules:
