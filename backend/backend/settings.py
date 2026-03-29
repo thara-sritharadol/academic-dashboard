@@ -25,6 +25,9 @@ ALLOWED_HOSTS = [host.strip() for host in hosts_env.split(',') if host.strip()]
 cors_env = os.getenv('CORS_ALLOWED_ORIGINS')
 CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_env.split(',') if origin.strip()]
 
+csrf_env = os.getenv('CSRF_TRUSTED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in cors_env.split(',') if origin.strip()]
+
 SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
