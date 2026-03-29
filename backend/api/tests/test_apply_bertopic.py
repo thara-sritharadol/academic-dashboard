@@ -1,3 +1,16 @@
+import sys
+from unittest.mock import MagicMock
+
+heavy_modules = [
+    'bertopic', 'umap', 'spacy', 'sklearn', 'sklearn.feature_extraction.text',
+    'gensim', 'gensim.models.coherencemodel', 'gensim.corpora.dictionary',
+    'plotly.express', 'matplotlib.pyplot', 'seaborn', 'pandas'
+]
+
+for mod in heavy_modules:
+    sys.modules[mod] = MagicMock()
+
+
 import pytest
 from django.core.management import call_command
 from api.models import Paper

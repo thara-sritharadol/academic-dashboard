@@ -8,5 +8,3 @@ python-dotenv==1.2.1
 requests==2.32.5
 tqdm==4.67.1
 numpy==2.2.6
-spacy==3.8.11
-scikit-learn==1.7.2

@@ -4,13 +4,6 @@ import spacy
 from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from umap import UMAP
 from bertopic import BERTopic
-from gensim.models.coherencemodel import CoherenceModel
-from gensim.corpora.dictionary import Dictionary
-import plotly.express as px
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
-import umap as umap_learn 
 
 logger = logging.getLogger(__name__)
 
