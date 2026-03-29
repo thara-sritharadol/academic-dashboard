@@ -1,7 +1,6 @@
 import pytest
 from django.core.management import call_command
 from api.models import Author, Paper
-import api.management.commands.batch_fetch_papers
 
 #Use Fake DB
 @pytest.mark.django_db
