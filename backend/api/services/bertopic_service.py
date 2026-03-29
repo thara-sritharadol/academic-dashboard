@@ -15,29 +15,8 @@ import umap as umap_learn
 logger = logging.getLogger(__name__)
 
 class BERTopicService:
-    # 1. เพิ่มตัวแปร use_lemmatized_input
-    def __init__(self, n_topics=None, use_approx_dist=False, use_lemmatized_input=False):
-        self.n_topics = n_topics 
-        self.use_approx_dist = use_approx_dist
-        self.use_lemmatized_input = use_lemmatized_input
-        self.nlp = None
-        self.topic_model = None
-        self.topics = None
-        self.probs = None
-        
-        try:
-            self.nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
-            self._setup_stopwords()
-        except OSError:
-            logger.error("Spacy model 'en_core_web_sm' not found.")
-            raise
 
-        self.vectorizer_model = CountVectorizer(
-            tokenizer=self.spacy_tokenizer, 
-            ngram_range=(1, 2)
-        )
-
-    def __init__(self, n_topics=None, use_approx_dist=False, use_lemmatized_input=False):
+    def __init__(self, n_topics=None, use_approx_dist=True, use_lemmatized_input=False):
         self.n_topics = n_topics
         self.use_approx_dist = use_approx_dist
         self.use_lemmatized_input = use_lemmatized_input
