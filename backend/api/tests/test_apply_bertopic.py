@@ -1,6 +1,7 @@
 import pytest
 from django.core.management import call_command
 from api.models import Paper
+import api.management.commands.apply_bertopic_clusters
 
 @pytest.mark.django_db
 def test_apply_bertopic_command_success(mocker):
