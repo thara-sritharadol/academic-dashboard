@@ -9,10 +9,6 @@
 [![Web API Repo](https://img.shields.io/badge/API%20Repo-View%20Source-blue)](https://github.com/thara-sritharadol/academic-dashboard-api)
 This repository contains the offline **Data Engineering** and **Machine Learning** pipeline for the Academic Collaboration Network project. It is responsible for extracting, processing, and clustering over 4,600 academic research papers, ultimately structuring the data for the production Web API.
 
-## Separation of Concerns (Architecture Note)
-To ensure the production web application remains highly performant and scalable, the heavy lifting of Natural Language Processing (NLP) and Topic Modeling is intentionally isolated in this repository. 
-The pipeline runs locally (or via scheduled batch jobs) to process the data and pushes the refined, structured results directly to our cloud database (Neon.tech). This allows the frontend and backend API to operate with minimal latency and memory footprint.
-
 ## Pipeline Workflow (ETL & ML)
 
 1. **Extract (Data Collection):** * Fetches raw publication data and author metadata (e.g., via OpenAlex or other academic databases).
