@@ -10,7 +10,7 @@ class Author(models.Model):
 
     last_fetched_papers = models.DateTimeField(null=True, blank=True)
 
-    primary_cluster = models.CharField(max_length=255, null=True, blank=True)
+    primary_cluster = models.IntegerField(null=True, blank=True)
     topic_profile = models.JSONField(null=True, blank=True)
     faculty = models.CharField(max_length=255, null=True, blank=True)
     department = models.CharField(max_length=255, null=True, blank=True)
