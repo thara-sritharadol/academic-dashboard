@@ -12,6 +12,7 @@ class Command(BaseCommand):
         parser.add_argument("--faculty", type=str, help="TU Faculty")
         parser.add_argument("--gemini_key", type=str, help="Gemini API Key")
         parser.add_argument("--batch_size", type=int, default=50, help="Number of authors to fetch papers for")
+        parser.add_argument("--auto_tune", action="store_true", help="Auto-tune multi-label thresholds (Abs/Rel) via Grid Search")
 
     def handle(self, *args, **options):
         # 1. Manage API Keys (if not sent, retrieve them from the OS's Environment Variables).
@@ -19,6 +20,7 @@ class Command(BaseCommand):
         tu_faculty = options.get("faculty")
         gemini_key = options.get("gemini_key") or os.environ.get("GEMINI_API_KEY")
         batch_size = options.get("batch_size")
+        auto_tune = options.get("auto_tune")
 
         if not tu_api_key:
             self.stdout.write(self.style.ERROR("Error: TU API Key is required to run the pipeline."))
@@ -44,7 +46,7 @@ class Command(BaseCommand):
             # Clean Abstracts
             # ---------------------------------------------------------
             self.stdout.write(self.style.NOTICE("\n>>> Step 3: Cleaning Abstracts (HTML/XML Tags)..."))
-            call_command('clean_abstracts')
+            call_command('clean_texts')
 
             # ---------------------------------------------------------
             # Deduplication (Merge Authors & Papers)
@@ -58,7 +60,7 @@ class Command(BaseCommand):
             # ---------------------------------------------------------
             self.stdout.write(self.style.NOTICE("\n>>> Step 5: Clustering & Auto-Naming Topics..."))
             if gemini_key:
-                call_command('apply_bertopic_clusters', gemini_key=gemini_key)
+                call_command('apply_bertopic_clusters', gemini_key=gemini_key, auto_tune=auto_tune)
             else:
                 self.stdout.write(self.style.WARNING("No Gemini Key provided. Running clustering without LLM naming."))
                 call_command('apply_bertopic_clusters')

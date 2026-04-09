@@ -7,8 +7,8 @@ class TextCleaningService:
         if not text:
             return ""
             
-        # Delete HTML/XML tags
         cleaned_text = re.sub(r'<.*?>', ' ', text)
+        cleaned_text = re.sub(r'[^\x00-\x7F]+', ' ', cleaned_text)
         cleaned_text = re.sub(r'\s+', ' ', cleaned_text).strip()
         cleaned_text = re.sub(r'\s+([.,;:?!])', r'\1', cleaned_text)
         

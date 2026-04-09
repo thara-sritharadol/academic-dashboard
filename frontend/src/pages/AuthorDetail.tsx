@@ -109,13 +109,6 @@ export default function AuthorDetail() {
 
   const expertiseData = prepareExpertiseData(author.topic_profile);
 
-  //Primary Cluster
-  const primaryClusterName =
-    author.primary_cluster !== null
-      ? topicMap[parseInt(author.primary_cluster)] ||
-        `Topic ${author.primary_cluster}`
-      : null;
-
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto space-y-6">
