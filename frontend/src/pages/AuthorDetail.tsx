@@ -141,11 +141,6 @@ export default function AuthorDetail() {
                 <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
                   <Award size={14} /> {author.works_count} Publications
                 </span>
-                {primaryClusterName && (
-                  <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                    Expertise: {primaryClusterName}
-                  </span>
-                )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-3">
