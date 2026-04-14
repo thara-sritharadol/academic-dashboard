@@ -11,8 +11,9 @@ import {
   Legend,
   ResponsiveContainer,
   Brush,
-  PieChart,
-  Pie,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
 import api from "../services/api";
 import type { DashboardSummary } from "../types/models";
@@ -346,7 +347,8 @@ export default function DashboardOverview() {
       {/* Doughnut Chart & Top Authors Placeholder */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         {/* Doughnut Chart*/}
-        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+        {/* Horizontal Bar Chart */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col lg:col-span-1">
           <h2 className="text-lg font-bold text-slate-800 mb-1">
             Overall Distribution
           </h2>
@@ -354,25 +356,32 @@ export default function DashboardOverview() {
             All-time publications by domain
           </p>
 
-          <div className="flex-1 min-h-[250px] w-full relative">
+          {/* Container for Scrollbar */}
+          <div className="flex-1 w-full overflow-y-auto custom-scrollbar pr-2 max-h-[400px]">
             {overallTopicDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={overallTopicDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={100}
-                    paddingAngle={3}
-                    dataKey="value"
-                    stroke="none"
+              <ResponsiveContainer
+                width="100%"
+                height={Math.max(250, overallTopicDistribution.length * 40)}
+              >
+                <BarChart
+                  data={overallTopicDistribution}
+                  layout="vertical"
+                  margin={{ top: 0, right: 10, left: -20, bottom: 0 }}
+                >
+                  <XAxis type="number" hide />{" "}
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={130}
+                    tick={{ fontSize: 11, fill: "#64748b" }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-
                   <RechartsTooltip
-                    formatter={(value: any, name: any) => [
+                    cursor={{ fill: "#f1f5f9" }}
+                    formatter={(value: any) => [
                       `${value} Papers`,
-                      name,
+                      "Publications",
                     ]}
                     contentStyle={{
                       borderRadius: "8px",
@@ -380,21 +389,19 @@ export default function DashboardOverview() {
                       boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     }}
                   />
-                </PieChart>
+                  {/* radius, barSize */}
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                    {overallTopicDistribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-slate-400">
+              <div className="h-full min-h-[250px] flex items-center justify-center text-slate-400">
                 No data available
               </div>
             )}
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-2xl font-bold text-slate-700">
-                {overallTopicDistribution.length}
-              </span>
-              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">
-                Topics
-              </span>
-            </div>
           </div>
         </div>
 
