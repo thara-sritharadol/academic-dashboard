@@ -1,15 +1,9 @@
-import { useState, useEffect } from "react";
-import {
-  Search,
-  Filter,
-  BookOpen,
-  ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"; //
+import { useState, useEffect, useRef } from "react";
+import { Search, Filter } from "lucide-react"; //
 import api from "../services/api";
 import type { Paper } from "../types/models";
-import { Link } from "react-router-dom";
+import PaginationControls from "../components/PaginationControls";
+import PaperTable from "../components/PaperTable";
 
 export default function PaperSearch() {
   const [papers, setPapers] = useState<Paper[]>([]);
@@ -17,6 +11,7 @@ export default function PaperSearch() {
 
   // State For Filter
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState("");
   const [availableDomains, setAvailableDomains] = useState<string[]>([]);
 
@@ -26,20 +21,25 @@ export default function PaperSearch() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 20; //
 
+  const isFirstRender = useRef(true);
+
   // Fetch From API
   const fetchPapers = async (
     overrideDomain?: string,
     pageNumber: number = 1,
+    overrideQuery?: string,
   ) => {
     setLoading(true);
 
     const activeDomain =
       overrideDomain !== undefined ? overrideDomain : selectedDomain;
+    const activeQuery =
+      overrideQuery !== undefined ? overrideQuery : debouncedQuery;
 
     try {
       const response = await api.get("/papers/", {
         params: {
-          q: searchQuery || undefined,
+          q: activeQuery || undefined,
           domain: activeDomain || undefined,
           page: pageNumber,
         },
@@ -78,14 +78,31 @@ export default function PaperSearch() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      setCurrentPage(1); //
-      fetchPapers(selectedDomain, 1);
-    }
-  };
+  // Debounce
 
-  // ฟังก์ชันสำหรับเปลี่ยนหน้า
+  useEffect(() => {
+    // 500ms
+    const timerId = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 500);
+
+    // Timer Clear
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchQuery]);
+
+  // Call API for Debounce
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    setCurrentPage(1);
+    fetchPapers(selectedDomain, 1, debouncedQuery);
+  }, [debouncedQuery]);
+
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
@@ -111,10 +128,9 @@ export default function PaperSearch() {
           <input
             type="text"
             className="block w-full pl-10 pr-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            placeholder="Search by title or abstract... (Press Enter to search)"
+            placeholder="Search by title or abstract..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
           />
         </div>
 
@@ -145,164 +161,16 @@ export default function PaperSearch() {
         </div>
       </div>
 
-      {/* Table display area */}
+      {/* Table & Pagination Component */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 overflow-hidden flex flex-col">
-        {loading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500">
-            <div className="animate-pulse flex flex-col items-center gap-2">
-              <BookOpen size={32} className="text-slate-300" />
-              <p>Searching database...</p>
-            </div>
-          </div>
-        ) : papers.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500">
-            No papers found matching your criteria.
-          </div>
-        ) : (
-          <>
-            <div className="overflow-x-auto flex-1 custom-scrollbar">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50 sticky top-0 z-10">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-2/5"
-                    >
-                      Paper Title
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-1/5"
-                    >
-                      Authors
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                    >
-                      Year
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                    >
-                      Discovered Domains
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-4 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider"
-                    >
-                      Citations
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-100">
-                  {papers.map((paper) => (
-                    <tr
-                      key={paper.id}
-                      className="hover:bg-slate-50 transition-colors group"
-                    >
-                      <td className="px-6 py-4">
-                        <div className="text-sm font-semibold text-slate-900 line-clamp-2">
-                          {paper.title}
-                        </div>
-                        <Link
-                          to={`/papers/${paper.id}`}
-                          className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center gap-1"
-                        >
-                          View details <ExternalLink size={12} />
-                        </Link>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="text-sm text-slate-600 line-clamp-2">
-                          {paper.authors_list?.join(", ") || "Unknown Author"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-center whitespace-nowrap">
-                        <div className="text-sm text-slate-700">
-                          {paper.year || "-"}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap gap-1.5">
-                          {paper.predicted_multi_labels?.map((label, idx) => {
-                            const isCS = label
-                              .toLowerCase()
-                              .includes("computer");
-                            const colorClass = isCS
-                              ? "bg-blue-100 text-blue-700 border-blue-200"
-                              : "bg-emerald-100 text-emerald-700 border-emerald-200";
-                            return (
-                              <span
-                                key={idx}
-                                className={`px-2.5 py-1 inline-flex text-[11px] leading-4 font-semibold rounded-full border ${colorClass}`}
-                              >
-                                {label.split(":")[1]}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-right whitespace-nowrap">
-                        <div className="text-sm font-medium text-slate-700">
-                          {paper.citation_count}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination Controls */}
-            <div className="bg-white px-6 py-4 border-t border-slate-200 flex items-center justify-between shrink-0">
-              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-slate-700">
-                    Showing{" "}
-                    <span className="font-semibold">
-                      {(currentPage - 1) * pageSize + 1}
-                    </span>{" "}
-                    to{" "}
-                    <span className="font-semibold">
-                      {Math.min(currentPage * pageSize, totalCount)}
-                    </span>{" "}
-                    of <span className="font-semibold">{totalCount}</span>{" "}
-                    results
-                  </p>
-                </div>
-                <div>
-                  <nav
-                    className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-                    aria-label="Pagination"
-                  >
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-slate-300 bg-white text-sm font-medium ${currentPage === 1 ? "text-slate-300 cursor-not-allowed" : "text-slate-500 hover:bg-slate-50"}`}
-                    >
-                      <span className="sr-only">Previous</span>
-                      <ChevronLeft size={18} aria-hidden="true" />
-                    </button>
-
-                    <span className="relative inline-flex items-center px-4 py-2 border border-slate-300 bg-white text-sm font-medium text-slate-700">
-                      Page {currentPage} of {totalPages}
-                    </span>
-
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-slate-300 bg-white text-sm font-medium ${currentPage === totalPages ? "text-slate-300 cursor-not-allowed" : "text-slate-500 hover:bg-slate-50"}`}
-                    >
-                      <span className="sr-only">Next</span>
-                      <ChevronRight size={18} aria-hidden="true" />
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+        <PaperTable papers={papers} loading={loading} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );

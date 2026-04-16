@@ -1,23 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  Radar,
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  ResponsiveContainer,
-  Tooltip as RechartsTooltip,
-} from "recharts";
-import {
-  User,
-  Building2,
-  BookOpen,
-  ChevronLeft,
-  Award,
-  ExternalLink,
-  Calendar,
-} from "lucide-react";
+import { BookOpen, ChevronLeft } from "lucide-react";
 import api from "../services/api";
 import AuthorProfileHeader from "../components/AuthorProfileHeader";
 import TopicRadarChart from "../components/TopicRadarChart";
@@ -109,8 +92,6 @@ export default function AuthorDetail() {
         probability: Math.round(item.originalProb * 100),
       }));
   };
-
-  const expertiseData = prepareExpertiseData(author.topic_profile);
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
