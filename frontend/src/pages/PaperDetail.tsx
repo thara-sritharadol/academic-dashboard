@@ -62,31 +62,6 @@ export default function PaperDetail() {
     );
   }
 
-  const prepareRadarData = (distribution: number[]) => {
-    if (!distribution || distribution.length === 0) return [];
-
-    return distribution
-      .map((prob, index) => {
-        const rawSubject = topicMap[index] || `Topic ${index}`;
-        const shortSubject =
-          rawSubject.length > 22
-            ? rawSubject.substring(0, 22) + "..."
-            : rawSubject;
-
-        return {
-          subject: shortSubject,
-          originalProb: prob,
-        };
-      })
-      .filter((item) => item.originalProb > 0.02)
-      .sort((a, b) => b.originalProb - a.originalProb)
-      .slice(0, 6)
-      .map((item) => ({
-        subject: item.subject,
-        probability: Math.round(item.originalProb * 100),
-      }));
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 p-8">
       <div className="max-w-6xl mx-auto space-y-6">
