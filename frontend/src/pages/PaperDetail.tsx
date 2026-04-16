@@ -91,22 +91,6 @@ export default function PaperDetail() {
     );
   }
 
-  // Convert the topic_distribution array into data for a radar chart.
-
-  /*const prepareRadarData = (distribution: number[]) => {
-    if (!distribution || distribution.length === 0) return [];
-
-    return distribution
-      .map((prob, index) => ({
-        subject: `Topic ${index}`,
-        probability: Math.round(prob * 100), // Convert to percentage.
-      }))
-      .filter((item) => item.probability > 2) // Filter to include only topics that account for more than 2%.
-      .sort((a, b) => b.probability - a.probability) // Sorted from highest to lowest.
-      .slice(0, 6); // Just display the top 6 to make the graph look nice.
-  };
-  */
-
   const prepareRadarData = (distribution: number[]) => {
     if (!distribution || distribution.length === 0) return [];
 
