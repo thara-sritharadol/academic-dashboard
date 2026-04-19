@@ -1,5 +1,5 @@
 import pytest
-from backend.api.pipelines.text_cleaning_service import TextCleaningService
+from api.pipelines.text_cleaning_service import TextCleaningService
 
 def test_clean_html_xml_tags_normal_html():
     text = "<p>This is an <b>Abstract</b>.</p>"

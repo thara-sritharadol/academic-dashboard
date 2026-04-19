@@ -1,5 +1,5 @@
 import pytest
-from backend.api.pipelines.tu_sync_service import TUSyncService
+from api.pipelines.tu_sync_service import TUSyncService
 
 @pytest.fixture
 def service():

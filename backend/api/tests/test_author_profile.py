@@ -2,7 +2,7 @@ import pytest
 from io import StringIO
 from django.core.management import call_command
 from api.models import Author, Paper
-from backend.api.pipelines.author_profile_service import AuthorProfileService
+from api.pipelines.author_profile_service import AuthorProfileService
 
 @pytest.mark.django_db
 def test_generate_all_profiles_logic():
