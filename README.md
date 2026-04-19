@@ -5,7 +5,7 @@
 
 **Part of the Academic Collaboration Network Dashboard Project**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Available-success)](https://academic-dashboard-rose.vercel.app/)
+[![Live Demo](https://academic-dashboard.thara-sritharadol.com/)
 This repository contains the offline **Data Engineering** and **Machine Learning** pipeline for the Academic Collaboration Network project. It is responsible for extracting, processing, and clustering over 4,600 academic research papers, ultimately structuring the data for the production Web API.
 
 ## Pipeline Workflow (ETL & ML)
