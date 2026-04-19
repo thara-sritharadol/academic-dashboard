@@ -93,7 +93,20 @@ class BERTopicService:
         self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
         print("Reducing outliers using Embeddings strategy...")
-        new_topics = self.topic_model.reduce_outliers(train_docs, self.topics, strategy="embeddings", threshold=0.5)
+
+        if -1 in self.topics:
+            outliers_count = self.topics.count(-1)
+            print(f"Found {outliers_count} outliers. Reducing using Embeddings strategy...")
+    
+            try: 
+                new_topics = self.topic_model.reduce_outliers(train_docs, self.topics, strategy="embeddings", threshold=0.5)
+            except Exception as e:
+                print(f"Warning: Failed to reduce outliers due to {e}. Using original topics.")
+                new_topics = self.topics
+
+        else:
+            print("No outliers to reduce.")
+            new_topics = self.topics
 
         self.topic_model.update_topics(train_docs, topics=new_topics, vectorizer_model=self.vectorizer_model)
         self.topics = new_topics

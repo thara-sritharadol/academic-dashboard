@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.services.data_deduplication_service import DataDeduplicationService
+from api.pipelines.data_deduplication_service import DataDeduplicationService
 
 class Command(BaseCommand):
     help = "Merge duplicate papers based on exact case-insensitive title matching"

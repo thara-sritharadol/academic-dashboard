@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from tqdm import tqdm
 from api.models import Paper
-from api.services.text_cleaning_service import TextCleaningService
+from api.pipelines.text_cleaning_service import TextCleaningService
 
 class Command(BaseCommand):
     help = "Clean HTML/XML tags from all paper abstracts and titles in the database"

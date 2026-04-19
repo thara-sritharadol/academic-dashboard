@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.services.tu_sync_service import TUSyncService
+from api.pipelines.tu_sync_service import TUSyncService
 
 class Command(BaseCommand):
     help = "Fetch all faculties and authors from TU API and save to the local database"

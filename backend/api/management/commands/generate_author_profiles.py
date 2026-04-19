@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand
-from api.services.author_profile_service import AuthorProfileService
+from api.pipelines.author_profile_service import AuthorProfileService
 
 class Command(BaseCommand):
     help = "Generate primary cluster and topic profile distributions for all authors based on their papers."

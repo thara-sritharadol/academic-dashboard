@@ -32,6 +32,10 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
+TU_API_KEY = os.getenv('TU_API_KEY')
+
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
 # Application definition
 INSTALLED_APPS = [
     'api.apps.ApiConfig',

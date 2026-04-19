@@ -5,7 +5,7 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db.models import F
 from api.models import Paper, Author
-from api.services.papers_fetch import stream_papers_from_apis
+from api.pipelines.papers_fetch import stream_papers_from_apis
 
 class Command(BaseCommand):
     help = "Batch fetch papers for authors in the database (processes those with oldest fetch dates first)"

@@ -5,8 +5,8 @@ from collections import Counter
 from tqdm import tqdm
 from django.core.management.base import BaseCommand
 from api.models import Paper
-from api.services.bertopic_service import BERTopicService 
-from api.services.gemini_service import GeminiNamingService
+from api.pipelines.bertopic_service import BERTopicService 
+from api.pipelines.gemini_service import GeminiNamingService
 
 class Command(BaseCommand):
     help = "Run BERTopic, auto-tune multi-label thresholds via Grid Search, and use Gemini LLM for naming"

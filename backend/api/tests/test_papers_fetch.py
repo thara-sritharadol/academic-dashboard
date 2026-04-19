@@ -1,5 +1,5 @@
 import pytest
-from api.services.papers_fetch import _reconstruct_openalex_abstract, _enrich_with_semantic_scholar, stream_papers_from_apis
+from backend.api.pipelines.papers_fetch import _reconstruct_openalex_abstract, _enrich_with_semantic_scholar, stream_papers_from_apis
 
 def test_reconstruct_openalex_abstract():
     mock_index = {
