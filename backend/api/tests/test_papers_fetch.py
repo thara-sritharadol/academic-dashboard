@@ -19,7 +19,7 @@ def test_reconstruct_openalex_abstract_empty():
 
 def test_enrich_with_semantic_scholar_success(mocker):
     # Simulate a `requests.get` command to the path of the `papers_fetch.py` file.
-    mock_get = mocker.patch('api.services.papers_fetch.requests.get')
+    mock_get = mocker.patch('api.pipelines.papers_fetch.requests.get')
     
     # Semantic Scholar Response
     mock_get.return_value.status_code = 200
@@ -39,8 +39,8 @@ def test_enrich_with_semantic_scholar_success(mocker):
 
 def test_stream_from_openalex_success(mocker):
     # Simulate making API calls to two locations: finding the instructor's ID and finding the paper.
-    mocker.patch('api.services.papers_fetch._get_openalex_author_id', return_value="A1234")
-    mock_get = mocker.patch('api.services.papers_fetch.requests.get')
+    mocker.patch('api.pipelines.papers_fetch._get_openalex_author_id', return_value="A1234")
+    mock_get = mocker.patch('api.pipelines.papers_fetch.requests.get')
     
     # Simulate the data that OpenAlex will send back as a response to the paper.
     mock_get.return_value.status_code = 200
