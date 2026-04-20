@@ -35,7 +35,7 @@ def test_generate_all_profiles_logic():
     author.refresh_from_db()
 
     # Check the Primary Cluster: It has 2, 2, -1 -> We should discard -1 and choose 2 as the primary cluster.
-    assert author.primary_cluster == "2"
+    assert author.primary_cluster == 2
 
     # Check Topic Profile: Must be the average of [0.1, 0.9], [0.3, 0.7], [0.5, 0.5]
     # (0.1+0.3+0.5)/3 = 0.3
