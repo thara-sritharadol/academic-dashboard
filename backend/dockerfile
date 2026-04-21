@@ -19,7 +19,10 @@ COPY . /app/
 
 # 6. User (Non-root) for security
 
-RUN adduser --disabled-password --no-create-home django-user
+RUN adduser --disabled-password django-user
+
+RUN chown -R django-user:django-user /app
+
 USER django-user
 
 # 7. 8000 (for Nginx)
