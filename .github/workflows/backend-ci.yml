@@ -11,6 +11,10 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     services:
       postgres:
         image: postgres:15
@@ -60,3 +64,32 @@ jobs:
       - name: Run Unit Tests
         run: |
           python -m pytest api/tests/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::108782062712:role/github-actions-ecr-role
+          aws-region: ap-southeast-7
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push to Amazon ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend # Dockerfile Django
+          file: ./backend/Dockerfile
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/academic-dashboard/backend:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/academic-dashboard/backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
