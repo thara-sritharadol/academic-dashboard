@@ -37,11 +37,11 @@ def main():
         print(f"Error: ไม่พบไฟล์ที่คลีนแล้วที่ {clean_file_path}")
         return
 
-    print(f"📥 Loading cleaned data from {clean_file_path}...")
+    print(f"Loading cleaned data from {clean_file_path}...")
     with open(clean_file_path, "r", encoding="utf-8") as f:
         cleaned_papers = json.load(f)
 
-    print("🔍 Starting deduplication process...")
+    print("Starting deduplication process...")
     
     unique_papers_by_doi = {}
     unique_papers_by_title = {}
@@ -55,7 +55,7 @@ def main():
         is_duplicate = False
         target_paper = None
         
-        # 1. เช็กซ้ำด้วย DOI (แม่นยำที่สุด)
+        # 1. เช็กซ้ำด้วย DOI
         if doi and doi in unique_papers_by_doi:
             target_paper = unique_papers_by_doi[doi]
             is_duplicate = True

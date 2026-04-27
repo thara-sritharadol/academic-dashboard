@@ -61,14 +61,15 @@ def fetch_papers_for_author(author_name: str):
                 doi_url = item.get("doi")
                 if not doi_url: continue
 
-                # เก็บข้อมูลดิบๆ ไว้ก่อน (ยังไม่ต้องทำ Deduplicate ในขั้นตอนนี้)
+                # Raw Data
                 papers_list.append({
                     "doi": doi_url.replace("https://doi.org/", ""),
                     "title": item.get("title", "(No Title)"),
                     "authorships": item.get("authorships", []),
                     "year": item.get("publication_year"),
                     "concepts": item.get("concepts", []),
-                    "abstract_inverted_index": item.get("abstract_inverted_index")
+                    "abstract_inverted_index": item.get("abstract_inverted_index"),
+                    "citation_count": item.get("cited_by_count", 0)
                 })
             time.sleep(0.5)
             
@@ -91,7 +92,7 @@ def main():
         response = s3_client.get_object(Bucket=bucket_name, Key="config/tu_authors_latest.json")
         authors_data = json.loads(response['Body'].read().decode('utf-8'))
     except Exception as e:
-        print(f"❌ Failed to read config from S3: {e}")
+        print(f"Failed to read config from S3: {e}")
         return
 
     print(f"Found {len(authors_data)} authors. Starting OpenAlex fetch...")
@@ -109,7 +110,7 @@ def main():
         # หน่วงเวลาเพื่อความสุภาพต่อ API
         time.sleep(1.5)
 
-    print(f"\n🎉 Fetch Complete! Total papers collected: {len(all_raw_papers)}")
+    print(f"\nFetch Complete! Total papers collected: {len(all_raw_papers)}")
 
     # 3. อัปโหลดผลลัพธ์ทั้งหมดกลับขึ้นไปพักไว้ที่ S3 (Raw Zone)
     date_str = datetime.now().strftime("%Y-%m-%d")
