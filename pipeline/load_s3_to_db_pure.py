@@ -135,7 +135,8 @@ def main():
         interactions.append({
             "paper_id": p_id,
             "primary_topic_id": t_db_id,
-            "topic_distribution": p.get("topic_distribution", [])
+            "topic_distribution": p.get("topic_distribution", []),
+            "predicted_multi_labels": p.get("predicted_multi_labels", [])
         })
 
         # 2. แมป Author เข้า Paper และเก็บข้อมูลคณะ
@@ -185,7 +186,13 @@ def main():
 
         # Upsert Interactions
         if interactions:
-            upsert_bulk(conn, interaction_table, interactions, conflict_cols=['paper_id'], update_cols=['primary_topic_id', 'topic_distribution'])
+            upsert_bulk(
+                conn,
+                interaction_table,
+                interactions,
+                conflict_cols=['paper_id'],
+                update_cols=['primary_topic_id', 'topic_distribution', 'predicted_multi_labels']
+            )
 
         # Drop and Replace สถิติเพื่อความแม่นยำ 100%
         conn.execute(fac_stat_table.delete())

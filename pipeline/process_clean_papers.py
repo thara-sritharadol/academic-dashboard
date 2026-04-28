@@ -74,6 +74,7 @@ def main():
             "abstract": clean_text(_reconstruct_openalex_abstract(paper.get("abstract_inverted_index"))),
             "authors_struct": flatten_authors(paper.get("authorships", [])),
             "year": paper.get("year"),
+            "venue": paper.get("venue"),
             "concepts": paper.get("concepts", []),
             "citation_count": paper.get("citation_count", 0)
         }

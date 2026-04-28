@@ -67,6 +67,7 @@ def fetch_papers_for_author(author_name: str):
                     "title": item.get("title", "(No Title)"),
                     "authorships": item.get("authorships", []),
                     "year": item.get("publication_year"),
+                    "venue": item.get("venue_name"),
                     "concepts": item.get("concepts", []),
                     "abstract_inverted_index": item.get("abstract_inverted_index"),
                     "citation_count": item.get("cited_by_count", 0)
@@ -114,7 +115,9 @@ def main():
 
     # 3. อัปโหลดผลลัพธ์ทั้งหมดกลับขึ้นไปพักไว้ที่ S3 (Raw Zone)
     date_str = datetime.now().strftime("%Y-%m-%d")
-    raw_file_key = f"raw-zone/{date_str}/raw_papers.json"
+
+    s3_raw_key = f"raw-zone/{date_str}/raw_papers.json"
+    s3_latest_key = "raw-zone/raw_papers_latest.json"
     
     try:
         json_data = json.dumps(all_raw_papers, ensure_ascii=False, indent=2)
@@ -130,11 +133,20 @@ def main():
 
         s3_client.put_object(
             Bucket=bucket_name,
-            Key=raw_file_key,
+            Key=s3_raw_key,
             Body=json_data,
             ContentType="application/json"
         )
-        print(f"Raw data successfully saved to s3://{bucket_name}/{raw_file_key}")
+
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key=s3_latest_key,
+            Body=json_data,
+            ContentType="application/json"
+        )
+
+
+        print(f"Raw data successfully saved to s3://{bucket_name}/{s3_raw_key}")
     except Exception as e:
         print(f"Failed to upload raw data to S3: {e}")
 
