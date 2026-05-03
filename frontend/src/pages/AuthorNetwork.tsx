@@ -15,15 +15,12 @@ export default function AuthorNetwork() {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
 
-  // 2. 🛠️ เปลี่ยน Type เป็น TopicResponse[]
   const [availableDomains, setAvailableDomains] = useState<TopicResponse[]>([]);
   const [isReady, setIsReady] = useState(false);
 
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [pendingDomains, setPendingDomains] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-
-  const fgRef = useRef<any>(null);
 
   useEffect(() => {
     api.get("/analytics/topics/").then((res) => {
