@@ -42,4 +42,8 @@ jobs:
         run: sam build
 
       - name: Deploy to AWS
-        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
+        run: >
+          sam deploy 
+          --no-confirm-changeset 
+          --no-fail-on-empty-changeset 
+          --parameter-overrides DatabaseUrl="${{ secrets.DATABASE_URL }}" DjangoSecretKey="${{ secrets.SECRET_KEY }}"

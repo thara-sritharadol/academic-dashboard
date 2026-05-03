@@ -4,6 +4,14 @@ Description: >
   Senior Project - Research Analytics Dashboard API
   Serverless Django running on AWS Lambda
 
+Parameters:
+  DatabaseUrl:
+    Type: String
+    Description: NeonDB Connection String
+  DjangoSecretKey:
+    Type: String
+    Description: Django Secret Key
+
 Globals:
   Function:
     Timeout: 30
@@ -12,11 +20,11 @@ Globals:
       Variables:
         DJANGO_SETTINGS_MODULE: backend.settings
         DATABASE_URL: !Ref DatabaseUrl
+        SECRET_KEY: !Ref DjangoSecretKey
         ALLOWED_HOSTS: "*"
-        CORS_ALLOWED_ORIGINS: https://academic-dashboard.thara-sritharadol.com
-        CSRF_TRUSTED_ORIGINS: https://academic-dashboard.thara-sritharadol.com
-        SECRET_KEY: !Ref SecretKey
-        DEBUG: False
+        CORS_ALLOWED_ORIGINS: "https://academic-dashboard.thara-sritharadol.com"
+        CSRF_TRUSTED_ORIGINS: "https://academic-dashboard.thara-sritharadol.com"
+        DEBUG: "False"
 
 Resources:
   DjangoApiFunction:
