@@ -2,8 +2,10 @@ name: Deploy API to AWS Lambda via OIDC
 
 on:
   push:
-    branches:
-      - main
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/*"
 
 permissions:
   id-token: write
