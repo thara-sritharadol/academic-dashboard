@@ -19,8 +19,6 @@ class Paper(models.Model):
     abstract = models.TextField(null=True, blank=True)
     citation_count = models.IntegerField(default=0)
     url = models.URLField(null=True, blank=True)
-
-    # Many-to-Many
     authors = models.ManyToManyField(Author, related_name="papers")
 
     def __str__(self):
@@ -28,13 +26,8 @@ class Paper(models.Model):
 
 # ML Section
 class Topic(models.Model):
-    #cluster_id from BERTopic (-1, 0, 1, 2...)
     topic_id = models.IntegerField(unique=True, db_index=True) 
-    
-    # name from LLM (like "Clinical Stroke Management")
     name = models.CharField(max_length=255) 
-    
-    # Keyword's Array
     keywords = models.JSONField(help_text="Keywords from BERTopic")
 
     def __str__(self):
@@ -82,10 +75,8 @@ class CoAuthorship(models.Model):
     # Link
     author_a = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="connections_as_a")
     author_b = models.ForeignKey(Author, on_delete=models.CASCADE, related_name="connections_as_b")
-    
     weight = models.IntegerField(default=1)
     
-    # Domain
     shared_topics = models.ManyToManyField(Topic, blank=True)
 
     class Meta:
