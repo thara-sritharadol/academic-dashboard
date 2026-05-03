@@ -1,8 +1,12 @@
 import os
 import json
 import boto3
+import argparse
 from datetime import datetime
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def merge_author_lists(list1: list, list2: list) -> list:
     merged_authors = {}
@@ -20,26 +24,47 @@ def merge_author_lists(list1: list, list2: list) -> list:
                 
     return list(merged_authors.values())
 
-def main():
-    bucket_name = os.environ.get("S3_BUCKET_NAME")
+# เพิ่ม parameter source_type
+def run_deduplicate(source_type=None):
+    if source_type is None:
+        source_type = os.getenv("DATA_SOURCE", "local").lower()
+
+    bucket_name = os.getenv("S3_BUCKET_NAME")
     date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Paths for Local
-    clean_file_path = f"local_data/clean-zone/{date_str}/cleaned_papers.json"
-    dedupe_folder = f"local_data/dedupe-zone/{date_str}"
-    dedupe_file_path = f"{dedupe_folder}/deduplicated_papers.json"
-    
-    # Paths สำหรับ S3
-    s3_dedupe_key = f"dedupe-zone/{date_str}/deduplicated_papers.json"
-    s3_latest_key = "dedupe-zone/deduplicated_papers_latest.json"
+    cleaned_papers = []
 
-    if not os.path.exists(clean_file_path):
-        print(f"Error: ไม่พบไฟล์ที่คลีนแล้วที่ {clean_file_path}")
+    # --- เลือก Source สำหรับการอ่านไฟล์ (cleaned_papers_latest.json) ---
+    if source_type == "s3":
+        if not bucket_name:
+            print("Error: Missing S3_BUCKET_NAME environment variable.")
+            return
+
+        s3_client = boto3.client('s3')
+        s3_clean_key = "clean-zone/cleaned_papers_latest.json"
+        
+        print(f"Loading cleaned data from S3: s3://{bucket_name}/{s3_clean_key}...")
+        try:
+            response = s3_client.get_object(Bucket=bucket_name, Key=s3_clean_key)
+            cleaned_papers = json.loads(response['Body'].read().decode('utf-8'))
+        except Exception as e:
+            print(f"Failed to read cleaned data from S3: {e}")
+            return
+    else:
+        # สมมติฐานว่าดึงข้อมูลของวันนั้นๆ ก่อน (หรือจะปรับให้ดึงไฟล์ล่าสุดก็ได้)
+        clean_file_path = f"local_data/clean-zone/{date_str}/cleaned_papers.json"
+        print(f"Loading cleaned data from Local: {clean_file_path}...")
+        
+        if not os.path.exists(clean_file_path):
+            print(f"Error: ไม่พบไฟล์ที่คลีนแล้วที่ {clean_file_path}")
+            return
+            
+        with open(clean_file_path, "r", encoding="utf-8") as f:
+            cleaned_papers = json.load(f)
+
+    if not cleaned_papers:
+        print("No data found to deduplicate.")
         return
-
-    print(f"Loading cleaned data from {clean_file_path}...")
-    with open(clean_file_path, "r", encoding="utf-8") as f:
-        cleaned_papers = json.load(f)
 
     print("Starting deduplication process...")
     
@@ -95,6 +120,13 @@ def main():
     print(f"   - Duplicates Merged: {total_merged}")
     print(f"   - Final Unique Papers: {len(final_papers)}")
 
+    # Paths สำหรับ Local & S3 Output
+    dedupe_folder = f"local_data/dedupe-zone/{date_str}"
+    dedupe_file_path = f"{dedupe_folder}/deduplicated_papers.json"
+    
+    s3_dedupe_key = f"dedupe-zone/{date_str}/deduplicated_papers.json"
+    s3_latest_key = "dedupe-zone/deduplicated_papers_latest.json"
+
     # เซฟลงเครื่อง Local
     os.makedirs(dedupe_folder, exist_ok=True)
     json_data = json.dumps(final_papers, ensure_ascii=False, indent=2)
@@ -104,13 +136,22 @@ def main():
 
     # อัปโหลดขึ้น S3
     if bucket_name:
-        s3_client = boto3.client('s3')
+        # สร้าง client เผื่อกรณีที่ตอนแรกอ่านจาก Local 
+        s3_client = boto3.client('s3') 
+        print(f"Uploading deduplicated data to S3 bucket: {bucket_name}...")
         try:
             s3_client.put_object(Bucket=bucket_name, Key=s3_dedupe_key, Body=json_data, ContentType="application/json")
             s3_client.put_object(Bucket=bucket_name, Key=s3_latest_key, Body=json_data, ContentType="application/json")
             print(f"S3 Upload Complete: {s3_dedupe_key}")
         except Exception as e:
             print(f"S3 Upload Failed: {e}")
+    else:
+         print("Skipped S3 upload: S3_BUCKET_NAME not set.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Deduplicate cleaned papers data")
+    parser.add_argument("--source", type=str, choices=["local", "s3"], default=None, 
+                        help="Data source to fetch cleaned files from (local or s3)")
+    args = parser.parse_args()
+    
+    run_deduplicate(source_type=args.source)

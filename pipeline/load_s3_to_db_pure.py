@@ -1,12 +1,16 @@
 import os
 import json
 import boto3
+import argparse
 from collections import defaultdict
 from itertools import combinations
 from datetime import datetime
+from dotenv import load_dotenv
 
 from sqlalchemy import create_engine, MetaData, Table, select
 from sqlalchemy.dialects.postgresql import insert
+
+load_dotenv()
 
 # 1. Postgres UPSERT
 def upsert_bulk(conn, table, data_list, conflict_cols, update_cols):
@@ -20,36 +24,85 @@ def upsert_bulk(conn, table, data_list, conflict_cols, update_cols):
     )
     conn.execute(upsert_stmt)
 
-# 2. Load data from S3
-def fetch_data_from_s3(bucket_name, region):
-    print(f"Connecting to AWS S3 (Region: {region})...")
-    s3_client = boto3.client('s3', region_name=region)
+# 2. Load data
+def fetch_data(source_type, bucket_name, region=None):
+    master_authors = []
+    papers_data = []
 
-    print(f"Downloading latest authors config...")
-    res_auth = s3_client.get_object(Bucket=bucket_name, Key="config/tu_authors_latest.json")
-    master_authors = json.loads(res_auth['Body'].read().decode('utf-8'))
+    if source_type == "s3":
+        if not bucket_name:
+             print("Error: Missing S3_BUCKET_NAME in environment for S3 data fetch.")
+             return [], []
+             
+        print(f"Connecting to AWS S3 (Region: {region})...")
+        s3_client = boto3.client('s3', region_name=region)
 
-    print(f"Downloading latest processed papers...")
-    res_papers = s3_client.get_object(Bucket=bucket_name, Key="results-zone/bertopic_results_latest.json")
-    papers_data = json.loads(res_papers['Body'].read().decode('utf-8'))
+        print(f"Downloading latest authors config from S3...")
+        try:
+            res_auth = s3_client.get_object(Bucket=bucket_name, Key="config/tu_authors_latest.json")
+            master_authors = json.loads(res_auth['Body'].read().decode('utf-8'))
+        except Exception as e:
+            print(f"Failed to fetch authors config from S3: {e}")
+
+        print(f"Downloading latest processed papers from S3...")
+        try:
+            res_papers = s3_client.get_object(Bucket=bucket_name, Key="results-zone/bertopic_results_latest.json")
+            papers_data = json.loads(res_papers['Body'].read().decode('utf-8'))
+        except Exception as e:
+            print(f"Failed to fetch processed papers from S3: {e}")
+
+    else:
+        # Load from Local
+        print("Loading data from Local...")
+        
+        # สมมติฐาน path สำหรับ local
+        local_auth_path = "local_data/config/tu_authors_latest.json"
+        local_papers_path = "local_data/results-zone/bertopic_results_latest.json" # สมมติฐานว่ามีไฟล์นี้ หรือใช้ของวันปัจจุบัน
+
+        # Fallback case: ถ้ายังไม่ได้ทำไฟล์ latest ใน local-results zone ก็ดึงจาก folder วันนี้แทน
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        fallback_papers_path = f"local_data/results-zone/{date_str}/bertopic_results.json"
+
+
+        try:
+            with open(local_auth_path, "r", encoding="utf-8") as f:
+                master_authors = json.load(f)
+        except FileNotFoundError:
+            print(f"Warning: Authors config not found at {local_auth_path}")
+            
+        target_papers_path = local_papers_path if os.path.exists(local_papers_path) else fallback_papers_path
+        
+        try:
+            with open(target_papers_path, "r", encoding="utf-8") as f:
+                papers_data = json.load(f)
+        except FileNotFoundError:
+             print(f"Warning: Processed papers not found at {target_papers_path}")
 
     return master_authors, papers_data
 
-# 3. Main ETL Process)
-def main():
-    print("Starting Pure Python S3-to-DB Loader...")
+# 3. Main ETL Process
+def load_to_db(source_type=None):
+    if source_type is None:
+        source_type = os.getenv("DATA_SOURCE", "local").lower()
+        
+    print(f"Starting Pure Python Loader... (Source: {source_type.upper()})")
     
     # Config
-    db_url = os.environ.get("NEONDB_URL") 
-    bucket_name = os.environ.get("S3_BUCKET_NAME")
-    aws_region = os.environ.get("AWS_DEFAULT_REGION", "ap-southeast-7")
+    db_url = os.getenv("DATABASE_URL") 
+    bucket_name = os.getenv("S3_BUCKET_NAME")
+    aws_region = os.getenv("AWS_DEFAULT_REGION", "ap-southeast-7")
 
-    if not db_url or not bucket_name:
-        print("Error: Missing NEONDB_URL or S3_BUCKET_NAME in environment.")
+    if not db_url:
+        print("Error: Missing DATABASE_URL in environment.")
         return
 
-    # 1. data from S3
-    master_authors, papers_data = fetch_data_from_s3(bucket_name, aws_region)
+    # 1. data
+    master_authors, papers_data = fetch_data(source_type, bucket_name, aws_region)
+    
+    if not papers_data:
+        print("Error: No paper data found to process.")
+        return
+        
     faculty_map = { a["name"].lower(): a.get("faculty") for a in master_authors }
 
     # 2. db
@@ -224,4 +277,9 @@ def main():
     print("All Done! Dashboard data is perfectly optimized and ready.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Load processed data to Database")
+    parser.add_argument("--source", type=str, choices=["local", "s3"], default=None, 
+                        help="Data source to fetch from (local or s3)")
+    args = parser.parse_args()
+    
+    load_to_db(source_type=args.source)

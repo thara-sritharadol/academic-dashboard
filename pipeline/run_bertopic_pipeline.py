@@ -1,6 +1,7 @@
 import os
 import json
 import boto3
+import argparse
 from datetime import datetime
 from tqdm import tqdm
 import spacy
@@ -11,6 +12,9 @@ from sklearn.feature_extraction.text import CountVectorizer, ENGLISH_STOP_WORDS
 from hdbscan import HDBSCAN
 import google.generativeai as genai
 from collections import Counter
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class BERTopicService:
     def __init__(self, n_topics=None, use_approx_dist=False, use_lemmatized_input=False):
@@ -93,11 +97,14 @@ class BERTopicService:
 
         self.topics, self.probs = self.topic_model.fit_transform(train_docs)
 
-        print("Reducing outliers using Embeddings strategy...")
-        new_topics = self.topic_model.reduce_outliers(train_docs, self.topics, strategy="embeddings", threshold=0.5)
+        if -1 in self.topics:
+            print("Topic -1 found. Reducing outliers using Embeddings strategy...")
+            new_topics = self.topic_model.reduce_outliers(train_docs, self.topics, strategy="embeddings", threshold=0.5)
 
-        self.topic_model.update_topics(train_docs, topics=new_topics, vectorizer_model=self.vectorizer_model)
-        self.topics = new_topics
+            self.topic_model.update_topics(train_docs, topics=new_topics, vectorizer_model=self.vectorizer_model)
+            self.topics = new_topics
+        else:
+            print("No outliers (Topic -1) found. Skipping outlier reduction.")
 
         if self.use_approx_dist:
             print("Calculating approximate topic distributions (c-TF-IDF)...")
@@ -236,7 +243,7 @@ def generate_llm_names(topic_model, api_key):
 
     print("\nCalling Gemini LLM to generate topic names...")
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-flash-latest') # อัปเดตชื่อโมเดลเป็นตัวล่าสุด
+    model = genai.GenerativeModel('gemini-flash-latest')
 
     topic_info = topic_model.get_topic_info()
     prompt = (
@@ -268,30 +275,49 @@ def generate_llm_names(topic_model, api_key):
         print(f"Failed to parse LLM response: {e}")
         return {}
 
-def main():
+# ── 3. อัปเดตฟังก์ชันหลักเพื่อรองรับ source_type ──
+def run_cluster(source_type=None):
+    # จัดการตัวแปร Source
+    if source_type is None:
+        source_type = os.getenv("DATA_SOURCE", "local").lower()
+
     # 1. ตั้งค่า Environment และ Path
-    gemini_api_key = os.environ.get("GEMINI_API_KEY")
-    bucket_name = os.environ.get("S3_BUCKET_NAME")
+    gemini_api_key = os.getenv("GEMINI_API_KEY")
+    bucket_name = os.getenv("S3_BUCKET_NAME")
     date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Path สำหรับ Input (Deduplicated Data)
-    dedupe_file_path = f"local_data/dedupe-zone/{date_str}/deduplicated_papers.json"
-    
-    # Path สำหรับ Output (Results Zone)
-    results_folder = f"local_data/results-zone/{date_str}"
-    results_file_path = f"{results_folder}/bertopic_results.json"
-    
-    s3_results_key = f"results-zone/{date_str}/bertopic_results.json"
-    s3_latest_key = "results-zone/bertopic_results_latest.json"
+    papers = []
 
-    if not os.path.exists(dedupe_file_path):
-        print(f"Error: ไม่พบไฟล์ Input ที่ {dedupe_file_path}")
+    # 2. โหลดข้อมูลตาม Source ที่เลือก
+    if source_type == "s3":
+        if not bucket_name:
+            print("Error: Missing S3_BUCKET_NAME environment variable.")
+            return
+
+        s3_client = boto3.client('s3')
+        s3_dedupe_key = "dedupe-zone/deduplicated_papers_latest.json"
+        
+        print(f"Loading deduplicated data from S3: s3://{bucket_name}/{s3_dedupe_key}...")
+        try:
+            response = s3_client.get_object(Bucket=bucket_name, Key=s3_dedupe_key)
+            papers = json.loads(response['Body'].read().decode('utf-8'))
+        except Exception as e:
+            print(f"Failed to read data from S3: {e}")
+            return
+    else:
+        dedupe_file_path = f"local_data/dedupe-zone/{date_str}/deduplicated_papers.json"
+        print(f"Loading deduplicated data from Local: {dedupe_file_path}...")
+        
+        if not os.path.exists(dedupe_file_path):
+            print(f"Error: ไม่พบไฟล์ Input ที่ {dedupe_file_path}")
+            return
+            
+        with open(dedupe_file_path, "r", encoding="utf-8") as f:
+            papers = json.load(f)
+
+    if not papers:
+        print("No papers data found to process.")
         return
-
-    # 2. โหลดข้อมูล
-    print(f"Loading deduplicated data from {dedupe_file_path}...")
-    with open(dedupe_file_path, "r", encoding="utf-8") as f:
-        papers = json.load(f)
 
     docs = []
     valid_papers = []
@@ -360,6 +386,9 @@ def main():
         paper["topic_distribution"] = paper_prob
 
     # 7. บันทึกไฟล์ผลลัพธ์ลง Local
+    results_folder = f"local_data/results-zone/{date_str}"
+    results_file_path = f"{results_folder}/bertopic_results.json"
+    
     os.makedirs(results_folder, exist_ok=True)
     json_data = json.dumps(valid_papers, ensure_ascii=False, indent=2)
     with open(results_file_path, "w", encoding="utf-8") as f:
@@ -369,13 +398,22 @@ def main():
     # 8. อัปโหลดขึ้น S3
     if bucket_name:
         print(f"Uploading final results to S3...")
-        s3_client = boto3.client('s3')
+        s3_client = boto3.client('s3') # สร้าง client ในกรณีที่โหลดไฟล์จาก local
+        s3_results_key = f"results-zone/{date_str}/bertopic_results.json"
+        s3_latest_key = "results-zone/bertopic_results_latest.json"
         try:
             s3_client.put_object(Bucket=bucket_name, Key=s3_results_key, Body=json_data, ContentType="application/json")
             s3_client.put_object(Bucket=bucket_name, Key=s3_latest_key, Body=json_data, ContentType="application/json")
             print(f"S3 Upload Complete: {s3_results_key}")
         except Exception as e:
             print(f"S3 Upload Failed: {e}")
+    else:
+        print("Skipped S3 upload: S3_BUCKET_NAME not set.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Run Topic Modeling with BERTopic")
+    parser.add_argument("--source", type=str, choices=["local", "s3"], default=None, 
+                        help="Data source to fetch deduplicated files from (local or s3)")
+    args = parser.parse_args()
+    
+    run_cluster(source_type=args.source)

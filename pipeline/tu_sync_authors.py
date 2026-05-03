@@ -4,6 +4,9 @@ import json
 import requests
 import boto3
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class TUSyncService:
     def __init__(self, api_key):
@@ -37,9 +40,6 @@ class TUSyncService:
             return []
 
     def sync_authors_to_list(self, specific_faculty=None):
-        """
-        เปลี่ยนจากการเซฟลง DB เป็นการรวบรวมข้อมูลใส่ List แทน
-        """
         faculties_to_process = []
         if specific_faculty:
             faculties_to_process.append({"faculty_en": specific_faculty})
@@ -69,7 +69,6 @@ class TUSyncService:
                 full_name_en = f"{first_en.strip()} {last_en.strip()}"
                 staff_fac_en = staff.get("Faculty_Name_En") or fac_en
 
-                # เก็บข้อมูลเป็น Dictionary แทนการเรียก Django Model
                 author_data = {
                     "name": full_name_en,
                     "institution": "Thammasat University",
@@ -78,77 +77,89 @@ class TUSyncService:
                 }
                 all_authors.append(author_data)
 
-            # พัก 1 วินาทีกัน API Rate Limit (เหมือนโค้ดเดิม)
+            # API Rate Limit
             time.sleep(1)
 
         return all_authors
 
-def lambda_handler(event, context):
-    """
-    ฟังก์ชันหลักที่ AWS Lambda จะเรียกใช้งาน
-    """
-    # 1. ดึงค่าตัวแปรจาก Environment Variables แทนการรับผ่าน Command Line args
-    api_key = os.environ.get("TU_API_KEY")
-    bucket_name = os.environ.get("S3_BUCKET_NAME")
+def run_find_researcher(event, context):
+    # Environment Variables
+    api_key = os.getenv("TU_API_KEY")
+    bucket_name = os.getenv("S3_BUCKET_NAME")
     
-    # สามารถรับค่า specific_faculty จาก Event Trigger ได้ (ถ้ามี)
+    # specific_faculty
     specific_faculty = event.get("faculty")
 
-    if not api_key or not bucket_name:
-        return {"status": "error", "message": "Missing TU_API_KEY or S3_BUCKET_NAME"}
+    if not api_key:
+        return {"status": "error", "message": "Missing TU_API_KEY"}
 
     print("Starting sync via Serverless Service...")
     
-    # 2. ดึงข้อมูลผ่าน Service
     service = TUSyncService(api_key=api_key)
     authors_list = service.sync_authors_to_list(specific_faculty=specific_faculty)
     
     if not authors_list:
         return {"status": "error", "message": "No authors found or failed to fetch."}
 
-    print(f"Fetched {len(authors_list)} authors. Uploading to S3...")
+    print(f"Fetched {len(authors_list)} authors.")
 
-    # 3. เซฟข้อมูลเป็น JSON และอัปโหลดขึ้น S3
-    s3_client = boto3.client('s3')
-    
-    # ตั้งชื่อไฟล์โดยใส่วันที่ เพื่อทำ Versioning ได้ง่ายๆ
+    # for Versioning
     date_str = datetime.now().strftime("%Y-%m-%d")
     file_key = f"config/tu_authors_{date_str}.json"
     
     try:
-        # แปลง List เป็น JSON String แล้วดันขึ้น S3 โดยตรง (ไม่ต้องสร้างไฟล์ลงเครื่อง)
+        # List to JSON String
         json_data = json.dumps(authors_list, ensure_ascii=False, indent=2)
 
         local_folder = "local_data/config"
         os.makedirs(local_folder, exist_ok=True)
+        
+        # 1. บันทึกไฟล์แบบมีวันที่บน Local
         local_file_path = f"{local_folder}/tu_authors_{date_str}.json"
-
         with open(local_file_path, "w", encoding="utf-8") as f:
             f.write(json_data)
-        print(f"Local copy saved to: {local_file_path}")
+        print(f"Local versioned copy saved to: {local_file_path}")
 
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key=file_key,
-            Body=json_data,
-            ContentType="application/json"
-        )
-        
-        # ถ่ายสำเนาอีกไฟล์เป็นชื่อ tu_authors_latest.json เพื่อให้ Step ต่อไป (OpenAlex) เรียกใช้ไฟล์ชื่อเดิมได้เสมอ
-        s3_client.put_object(
-            Bucket=bucket_name,
-            Key="config/tu_authors_latest.json",
-            Body=json_data,
-            ContentType="application/json"
-        )
-        
-        print(f"Sync Complete! Data saved to s3://{bucket_name}/{file_key}")
+        # 2. บันทึกไฟล์ latest บน Local (เพิ่มใหม่)
+        local_latest_path = f"{local_folder}/tu_authors_latest.json"
+        with open(local_latest_path, "w", encoding="utf-8") as f:
+            f.write(json_data)
+        print(f"Local latest copy saved to: {local_latest_path}")
+
+        # Put to S3 (ทำเฉพาะเมื่อมีการตั้งค่า S3_BUCKET_NAME ไว้)
+        if bucket_name:
+            print("Uploading to S3...")
+            s3_client = boto3.client('s3')
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key=file_key,
+                Body=json_data,
+                ContentType="application/json"
+            )
+            
+            s3_client.put_object(
+                Bucket=bucket_name,
+                Key="config/tu_authors_latest.json",
+                Body=json_data,
+                ContentType="application/json"
+            )
+            print(f"Sync Complete! Data saved to s3://{bucket_name}/{file_key}")
+            s3_path = f"s3://{bucket_name}/{file_key}"
+        else:
+            print("Skipped S3 upload: S3_BUCKET_NAME not set.")
+            s3_path = None
+
         return {
             "status": "success",
             "saved_count": len(authors_list),
-            "s3_path": f"s3://{bucket_name}/{file_key}"
+            "s3_path": s3_path,
+            "local_latest_path": local_latest_path
         }
         
     except Exception as e:
-        print(f"Failed to upload to S3: {e}")
+        print(f"Failed to process and save data: {e}")
         return {"status": "error", "message": str(e)}
+
+if __name__ == "__main__":
+    # Test run
+    run_find_researcher({}, None)

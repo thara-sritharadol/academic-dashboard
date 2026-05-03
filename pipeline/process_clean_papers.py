@@ -2,8 +2,12 @@ import os
 import json
 import re
 import boto3
+import argparse
 from datetime import datetime
 from tqdm import tqdm
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def clean_text(text: str) -> str:
     if not text:
@@ -41,32 +45,49 @@ def flatten_authors(authorships: list) -> list:
             })
     return authors_struct
 
-def main():
-    # 1. from Environment Variables
-    bucket_name = os.environ.get("S3_BUCKET_NAME")
+def run_clean_papers(source_type=None):
+    if source_type is None:
+        source_type = os.getenv("DATA_SOURCE", "local").lower()
+
+    bucket_name = os.getenv("S3_BUCKET_NAME")
     date_str = datetime.now().strftime("%Y-%m-%d")
     
-    # Path สำหรับ Local
-    raw_file_path = f"local_data/raw-zone/{date_str}/raw_papers.json"
-    local_clean_folder = f"local_data/clean-zone/{date_str}"
-    local_clean_path = f"{local_clean_folder}/cleaned_papers.json"
-    
-    # Path สำหรับ S3
-    s3_clean_key = f"clean-zone/{date_str}/cleaned_papers.json"
-    s3_latest_key = "clean-zone/cleaned_papers_latest.json"
+    raw_papers = []
 
-    if not os.path.exists(raw_file_path):
-        print(f"Error: ไม่พบไฟล์ข้อมูลดิบที่ {raw_file_path}")
+    # 2. Raw Data
+    if source_type == "s3":
+        if not bucket_name:
+            print("Error: Missing S3_BUCKET_NAME environment variable.")
+            return
+            
+        s3_client = boto3.client('s3')
+        s3_raw_key = "raw-zone/raw_papers_latest.json" 
+        
+        print(f"Loading raw data from S3: s3://{bucket_name}/{s3_raw_key}...")
+        try:
+            response = s3_client.get_object(Bucket=bucket_name, Key=s3_raw_key)
+            raw_papers = json.loads(response['Body'].read().decode('utf-8'))
+        except Exception as e:
+            print(f"Failed to read raw data from S3: {e}")
+            return
+            
+    else: # Default is local
+        raw_file_path = f"local_data/raw-zone/{date_str}/raw_papers.json"
+        print(f"Loading raw data from Local: {raw_file_path}...")
+        
+        if not os.path.exists(raw_file_path):
+            print(f"Error: Not Found Raw at {raw_file_path}")
+            return
+            
+        with open(raw_file_path, "r", encoding="utf-8") as f:
+            raw_papers = json.load(f)
+
+    if not raw_papers:
+        print("No data found to clean.")
         return
 
-    # 2. อ่านข้อมูลดิบ
-    print(f"Loading raw data from {raw_file_path}...")
-    with open(raw_file_path, "r", encoding="utf-8") as f:
-        raw_papers = json.load(f)
-
-    cleaned_papers = []
-
     # 3. Clean
+    cleaned_papers = []
     for paper in tqdm(raw_papers, desc="Cleaning Papers"):
         clean_paper_data = {
             "doi": paper.get("doi"),
@@ -82,16 +103,22 @@ def main():
         cleaned_papers.append(clean_paper_data)
 
     # 4. Save to Local
+    local_clean_folder = f"local_data/clean-zone/{date_str}"
+    local_clean_path = f"{local_clean_folder}/cleaned_papers.json"
+    
     os.makedirs(local_clean_folder, exist_ok=True)
     json_data = json.dumps(cleaned_papers, ensure_ascii=False, indent=2)
     with open(local_clean_path, "w", encoding="utf-8") as f:
         f.write(json_data)
     print(f"Local copy saved to: {local_clean_path}")
 
-    # 5. อัปโหลดขึ้น S3
+    # 5. Put to S3
     if bucket_name:
-        print(f"Uploading cleaned data to S3 bucket: {bucket_name}...")
         s3_client = boto3.client('s3')
+        s3_clean_key = f"clean-zone/{date_str}/cleaned_papers.json"
+        s3_latest_key = "clean-zone/cleaned_papers_latest.json"
+        
+        print(f"Uploading cleaned data to S3 bucket: {bucket_name}...")
         try:
             s3_client.put_object(
                 Bucket=bucket_name,
@@ -113,4 +140,9 @@ def main():
         print("Skipped S3 upload: S3_BUCKET_NAME not set.")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Clean raw papers data")
+    parser.add_argument("--source", type=str, choices=["local", "s3"], default=None, 
+                        help="Data source to fetch raw files from (local or s3)")
+    args = parser.parse_args()
+    
+    run_clean_papers(source_type=args.source)
