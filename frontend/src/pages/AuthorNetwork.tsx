@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import api from "../services/api";
 import { Users } from "lucide-react";
 import NetworkTopicFilter from "../components/NetworkTopicFilter";
