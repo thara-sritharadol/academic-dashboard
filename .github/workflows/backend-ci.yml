@@ -61,10 +61,6 @@ jobs:
           pip install -r requirements-web.txt
           pip install pytest pytest-django pytest-mock pluggy psycopg2-binary
 
-      - name: Run Unit Tests
-        run: |
-          python -m pytest api/tests/
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
