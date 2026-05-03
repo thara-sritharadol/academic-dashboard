@@ -1,0 +1,11 @@
+venv/
+.venv/
+env/
+.git/
+__pycache__/
+*.sqlite3
+*.csv
+*.pkl
+*.model
+node_modules/
+.aws-sam/

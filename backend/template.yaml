@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Senior Project - Research Analytics Dashboard API
+  Serverless Django running on AWS Lambda
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        DJANGO_SETTINGS_MODULE: backend.settings
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        ALLOWED_HOSTS: ${{ env.ALLOWED_HOSTS }}
+        CORS_ALLOWED_ORIGINS: ${{ env.CORS_ALLOWED_ORIGINS }}
+        CSRF_TRUSTED_ORIGINS: ${{ env.CSRF_TRUSTED_ORIGINS }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}}}
+        DEBUG: False
+
+Resources:
+  DjangoApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: lambda_adapter.handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: any
