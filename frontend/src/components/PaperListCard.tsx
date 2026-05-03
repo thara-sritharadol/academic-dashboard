@@ -2,13 +2,19 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Calendar, ExternalLink } from "lucide-react";
 
+interface TopicItem {
+  id: number;
+  name: string;
+  keywords?: string[];
+}
+
 interface PaperListCardProps {
   paper: {
     id: string | number;
     title: string;
     year?: string | number;
-    authors_list?: string[];
-    cluster_label?: string;
+    authors?: string[];
+    topics?: TopicItem[];
   };
 }
 
@@ -30,16 +36,15 @@ const PaperListCard: React.FC<PaperListCardProps> = ({ paper }) => {
             </span>
             <span className="w-1 h-1 rounded-full bg-slate-300"></span>
             <span className="truncate max-w-[200px] md:max-w-md">
-              {paper.authors_list?.join(", ")}
+              {paper.authors?.join(", ")}
             </span>
           </div>
         </div>
 
-        {/* Label */}
-        {paper.cluster_label && (
+        {paper.topics && paper.topics.length > 0 && (
           <div className="shrink-0 hidden sm:block">
             <span className="bg-yellow-50 text-yellow-700 border border-yellow-100 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap">
-              {paper.cluster_label.split(":")[1] || paper.cluster_label}
+              {paper.topics[0].name}
             </span>
           </div>
         )}

@@ -1,8 +1,14 @@
 import React from "react";
 import { Filter, Check, X } from "lucide-react";
 
+interface TopicResponse {
+  topic_id: number;
+  name: string;
+  keywords: string[];
+}
+
 interface NetworkTopicFilterProps {
-  availableDomains: string[];
+  availableDomains: TopicResponse[];
   selectedDomains: string[];
   pendingDomains: string[];
   isFilterOpen: boolean;
@@ -36,7 +42,7 @@ const NetworkTopicFilter: React.FC<NetworkTopicFilterProps> = ({
         />
         Filter Topics{" "}
         {selectedDomains.length > 0 && (
-          <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs">
+          <span className="bg-red-100 text-red-700 py-0.5 px-2 rounded-full text-xs font-bold">
             {selectedDomains.length}
           </span>
         )}
@@ -56,29 +62,23 @@ const NetworkTopicFilter: React.FC<NetworkTopicFilterProps> = ({
             </button>
           </div>
 
-          <div className="max-h-64 overflow-y-auto p-2">
+          <div className="max-h-[22rem] overflow-y-auto p-2 custom-scrollbar">
             {availableDomains.length === 0 ? (
               <p className="p-2 text-sm text-slate-500 text-center">
                 No topics available.
               </p>
             ) : (
-              availableDomains.map((domainStr) => {
-                const parts = domainStr.split(":");
-                const shortName = parts[0] ? parts[0].trim() : domainStr;
-                const fullName =
-                  parts.length > 1
-                    ? parts.slice(1).join(":").trim()
-                    : domainStr;
-                const isChecked = pendingDomains.includes(domainStr);
+              availableDomains.map((topic) => {
+                const isChecked = pendingDomains.includes(topic.name);
 
                 return (
                   <div
-                    key={domainStr}
-                    onClick={() => toggleDomain(domainStr)}
-                    className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group"
+                    key={topic.topic_id}
+                    onClick={() => toggleDomain(topic.name)}
+                    className="flex items-start gap-3 p-2.5 hover:bg-slate-50 rounded-lg cursor-pointer transition-colors group select-none"
                   >
                     <div
-                      className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center border ${
+                      className={`mt-0.5 shrink-0 w-4 h-4 rounded flex items-center justify-center border transition-colors ${
                         isChecked
                           ? "bg-yellow-600 border-yellow-600"
                           : "border-slate-300 group-hover:border-blue-400"
@@ -86,15 +86,36 @@ const NetworkTopicFilter: React.FC<NetworkTopicFilterProps> = ({
                     >
                       {isChecked && <Check size={12} className="text-white" />}
                     </div>
-                    <div className="flex-1 text-sm pointer-events-none">
-                      <span className="font-medium text-slate-700 block">
-                        {shortName}
-                      </span>
-                      <span
-                        className="text-xs text-slate-400 line-clamp-1"
-                        title={fullName}
-                      >
-                        {fullName}
+
+                    <div className="flex-1 min-w-0 pointer-events-none">
+                      {/* Keywords label */}
+                      <div className="flex flex-wrap gap-1 mb-1.5">
+                        {topic.keywords && topic.keywords.length > 0 ? (
+                          <>
+                            {topic.keywords.slice(0, 4).map((kw, i) => (
+                              <span
+                                key={i}
+                                className="px-1.5 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-semibold border border-slate-200"
+                              >
+                                {kw}
+                              </span>
+                            ))}
+                            {topic.keywords.length > 4 && (
+                              <span className="px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded text-[10px] font-medium border border-slate-100">
+                                +{topic.keywords.length - 4}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            No keywords
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Topic (Subtitle) */}
+                      <span className="text-xs text-slate-500 truncate block">
+                        {topic.name}
                       </span>
                     </div>
                   </div>

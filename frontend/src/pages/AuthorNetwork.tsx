@@ -5,38 +5,44 @@ import NetworkTopicFilter from "../components/NetworkTopicFilter";
 import NetworkLegend from "../components/NetworkLegend";
 import AuthorForceGraph from "../components/AuthorForceGraph";
 
+interface TopicResponse {
+  topic_id: number;
+  name: string;
+  keywords: string[];
+}
+
 export default function AuthorNetwork() {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [loading, setLoading] = useState(true);
-  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
-  const [isReady, setIsReady] = useState(false); // <-- เพิ่ม State เพื่อเช็คว่าโหลด Topic เสร็จหรือยัง
 
-  // Multi-select Checkbox
+  // 2. 🛠️ เปลี่ยน Type เป็น TopicResponse[]
+  const [availableDomains, setAvailableDomains] = useState<TopicResponse[]>([]);
+  const [isReady, setIsReady] = useState(false);
+
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [pendingDomains, setPendingDomains] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   const fgRef = useRef<any>(null);
 
-  // โหลด Topic ทั้งหมด และตั้งค่า 3 อันดับแรกเป็นค่าเริ่มต้น
   useEffect(() => {
     api.get("/analytics/topics/").then((res) => {
       const domains = res.data;
       setAvailableDomains(domains);
 
       if (domains.length > 0) {
-        // เลือก 3 Topic แรกเป็นค่าเริ่มต้น (ปรับตัวเลขได้ตามต้องการ)
-        const initialDomains = domains.slice(0, 3);
+        const initialDomains = domains
+          .slice(0, 3)
+          .map((d: TopicResponse) => d.name);
         setSelectedDomains(initialDomains);
         setPendingDomains(initialDomains);
       }
-      setIsReady(true); // อนุญาตให้ดึงกราฟได้
+      setIsReady(true);
     });
   }, []);
 
-  // ดึงข้อมูลกราฟ (จะทำงานก็ต่อเมื่อ isReady = true แล้วเท่านั้น)
   useEffect(() => {
-    if (!isReady) return; // กั้นไม่ให้โหลดกราฟจนกว่า Topic จะเซ็ตค่าเริ่มต้นเสร็จ
+    if (!isReady) return;
 
     const fetchNetwork = async () => {
       setLoading(true);
@@ -60,21 +66,14 @@ export default function AuthorNetwork() {
     fetchNetwork();
   }, [selectedDomains, isReady]);
 
-  useEffect(() => {
-    if (!loading && fgRef.current && graphData.nodes.length > 0) {
-      fgRef.current.d3Force("charge")?.strength(-100);
-      fgRef.current.d3Force("link")?.distance(80);
-    }
-  }, [graphData, loading]);
-
   const COLOR_TU = "#FFD13F";
   const COLOR_EXTERNAL = "#d1d5db";
 
-  const toggleDomain = (domain: string) => {
+  const toggleDomain = (domainName: string) => {
     setPendingDomains((prev) =>
-      prev.includes(domain)
-        ? prev.filter((d) => d !== domain)
-        : [...prev, domain],
+      prev.includes(domainName)
+        ? prev.filter((d) => d !== domainName)
+        : [...prev, domainName],
     );
   };
 
@@ -113,7 +112,6 @@ export default function AuthorNetwork() {
           </p>
         </div>
 
-        {/* Multi-select Filter */}
         <NetworkTopicFilter
           availableDomains={availableDomains}
           selectedDomains={selectedDomains}
@@ -126,12 +124,8 @@ export default function AuthorNetwork() {
         />
       </div>
 
-      {/* GRAPH SECTION */}
       <div className="flex-1 m-8 mt-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden relative">
-        {/* COMPONENT: Legend */}
         {!loading && graphData.nodes.length > 0 && <NetworkLegend />}
-
-        {/* COMPONENT: Force Graph */}
         <AuthorForceGraph graphData={graphData} loading={loading} />
       </div>
     </div>

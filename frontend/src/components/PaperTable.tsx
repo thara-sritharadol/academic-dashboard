@@ -10,18 +10,6 @@ interface PaperTableProps {
 }
 
 const PaperTable: React.FC<PaperTableProps> = ({ papers, loading }) => {
-  const getLabelName = (str: string) => {
-    if (!str) return "";
-    const parts = str.split(":");
-    return parts.length > 1 ? parts[1].trim() : str.trim();
-  };
-
-  const getLabelId = (str: string) => {
-    if (!str) return 0;
-    const parts = str.split(":");
-    return parts.length > 1 ? parseInt(parts[0], 10) : 0;
-  };
-
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center text-slate-500">
@@ -97,7 +85,7 @@ const PaperTable: React.FC<PaperTableProps> = ({ papers, loading }) => {
               </td>
               <td className="px-6 py-4">
                 <div className="text-sm text-slate-600 line-clamp-2">
-                  {paper.authors_list?.join(", ") || "Unknown Author"}
+                  {paper.authors?.join(", ") || "Unknown Author"}
                 </div>
               </td>
               <td className="px-6 py-4 text-center whitespace-nowrap">
@@ -106,22 +94,49 @@ const PaperTable: React.FC<PaperTableProps> = ({ papers, loading }) => {
                 </div>
               </td>
               <td className="px-6 py-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {paper.predicted_multi_labels?.map((label, idx) => {
-                    const labelId = getLabelId(label);
+                <div className="flex flex-col gap-4">
+                  {" "}
+                  {/* gap between */}
+                  {paper.topics?.map((topic, idx) => {
+                    const bgColor = getDynamicColor(topic.id, 0.1);
+                    const borderColor = getDynamicColor(topic.id, 0.3);
+                    const textColor = getDynamicColor(topic.id, 1);
 
                     return (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 inline-flex text-[11px] leading-4 font-semibold rounded-full border"
-                        style={{
-                          backgroundColor: getDynamicColor(labelId, 0.1), //
-                          borderColor: getDynamicColor(labelId, 0.3), //
-                          color: getDynamicColor(labelId, 1), //
-                        }}
-                      >
-                        {getLabelName(label)}
-                      </span>
+                      <div key={idx} className="flex flex-col items-start">
+                        {topic.keywords && topic.keywords.length > 0 ? (
+                          <div className="flex flex-wrap gap-1 mb-1">
+                            {topic.keywords.slice(0, 6).map((kw, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 rounded-md border text-[10px] font-semibold"
+                                style={{
+                                  backgroundColor: bgColor,
+                                  borderColor: borderColor,
+                                  color: textColor,
+                                }}
+                              >
+                                {kw}
+                              </span>
+                            ))}
+                            {/* rest total */}
+                            {topic.keywords.length > 6 && (
+                              <span className="px-1.5 py-0.5 bg-slate-50 text-slate-400 rounded-md border border-slate-100 text-[10px] font-medium">
+                                +{topic.keywords.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-slate-400 mb-1">
+                            No keywords
+                          </span>
+                        )}
+
+                        {/* Topic name*/}
+                        <div className="text-xs text-slate-500 leading-tight line-clamp-2">
+                          {topic.name}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>

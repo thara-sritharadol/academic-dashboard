@@ -4,7 +4,10 @@ import { User, Building2, Award } from "lucide-react";
 interface AuthorProfileHeaderProps {
   author: {
     name: string;
-    works_count: number;
+    stats?: {
+      total_papers: number;
+      total_citations: number;
+    };
     faculty?: string;
     department?: string;
     institution?: string;
@@ -29,8 +32,14 @@ const AuthorProfileHeader: React.FC<AuthorProfileHeaderProps> = ({
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
-              <Award size={14} /> {author.works_count} Publications
+              <Award size={14} /> {author.stats?.total_papers || 0} Publications
             </span>
+            {/* Citation */}
+            {author.stats?.total_citations !== undefined && (
+              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                {author.stats.total_citations} Citations
+              </span>
+            )}
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-slate-800 mb-3">

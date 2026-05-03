@@ -6,11 +6,16 @@ import PaperHeader from "../components/PaperHeader";
 import PaperMetadata from "../components/PaperMetadata";
 import PaperTopicRadar from "../components/PaperTopicRadar";
 
+interface TopicResponse {
+  topic_id: number;
+  name: string;
+  keywords: string[];
+}
+
 export default function PaperDetail() {
   const { id } = useParams();
   const [paper, setPaper] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [topicMap, setTopicMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -25,19 +30,14 @@ export default function PaperDetail() {
 
         const map: Record<number, string> = {};
         if (Array.isArray(topicRes.data)) {
-          topicRes.data.forEach((topicStr: string) => {
-            const match = topicStr.match(/(-?\d+)\s*:\s*(.+)/);
-            if (match) {
-              const topicId = parseInt(match[1], 10);
-              const topicName = match[2].trim();
-              map[topicId] = topicName;
+          topicRes.data.forEach((topic: TopicResponse) => {
+            if (topic && topic.topic_id !== undefined) {
+              map[topic.topic_id] = topic.name;
             }
           });
         }
-
-        setTopicMap(map);
-      } catch {
-        console.error("Error fetching data:");
+      } catch (error) {
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
@@ -89,35 +89,48 @@ export default function PaperDetail() {
               </p>
             </div>
 
-            {paper.predicted_multi_labels &&
-              paper.predicted_multi_labels.length > 0 && (
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
-                    <Tag className="text-red-600" /> Related Topics
-                  </h2>
-                  <div className="flex flex-wrap gap-2">
-                    {paper.predicted_multi_labels.map(
-                      (label: string, idx: number) => (
-                        <span
-                          key={idx}
-                          className="bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg text-sm"
-                        >
-                          {label.split(":")[1] || label}
-                        </span>
-                      ),
-                    )}
-                  </div>
+            {paper.topics && paper.topics.length > 0 && (
+              <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-200">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 mb-4">
+                  <Tag className="text-red-600" /> Related Topics
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {paper.topics.map((topic: any) => (
+                    <div
+                      key={topic.id}
+                      className="bg-slate-50 border border-slate-100 p-4 rounded-xl flex flex-col"
+                    >
+                      <h3 className="text-sm font-semibold text-slate-800 mb-2.5 leading-tight">
+                        {topic.name}
+                      </h3>
+
+                      {topic.keywords && topic.keywords.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-auto">
+                          {topic.keywords.map((kw: string, i: number) => (
+                            <span
+                              key={i}
+                              className="bg-white text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md text-[11px] font-medium"
+                            >
+                              {kw}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-[11px] text-slate-400 mt-auto italic">
+                          No keywords available
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
+            )}
           </div>
 
           {/* Right Column: Radar & Meta */}
           <div className="space-y-6">
-            {/* 2. Radar Chart */}
-            <PaperTopicRadar
-              distribution={paper.topic_distribution}
-              topicMap={topicMap}
-            />
+            <PaperTopicRadar distribution={paper.distribution_chart} />
 
             {/* 3. Meta Data */}
             <PaperMetadata

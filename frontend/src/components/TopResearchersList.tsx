@@ -2,9 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { FileText } from "lucide-react";
 
+interface TopicDetail {
+  name: string;
+  keywords: string[];
+}
+
 interface TopResearchersListProps {
   authors: any[];
-  topicMap: Record<string, string>;
+  topicMap: Record<number, TopicDetail>;
 }
 
 const TopResearchersList: React.FC<TopResearchersListProps> = ({
@@ -27,9 +32,9 @@ const TopResearchersList: React.FC<TopResearchersListProps> = ({
 
       <div className="flex-1 flex flex-col gap-3 justify-center">
         {authors.map((author, index) => {
-          const cleanId = String(author.primary_cluster).trim();
-          const topicName =
-            topicMap[cleanId] || `Topic ${author.primary_cluster}`;
+          const cleanId = Number(author.primary_cluster);
+          const topicDetail = topicMap[cleanId];
+          const topicName = topicDetail?.name;
 
           return (
             <Link

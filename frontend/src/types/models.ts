@@ -1,22 +1,27 @@
 export interface Paper {
-  id: string;
+  topics: Topic[];
+  id: number;
   title: string;
   year: number | null;
-  cluster_id: number | null;
-  cluster_label: string | null;
+  authors: string[];
+  multi_label: string[] | null;
   predicted_multi_labels: string[];
-  authors_list?: string[];
   citation_count: number;
+  doi: string;
 }
 
 export interface PaperDetail extends Paper {
   abstract: string | null;
-  doi: string;
   venue: string | null;
   url: string | null;
   topic_distribution: number[];
   entropy: number | null;
-  authors: Author[];
+}
+
+export interface Topic {
+  id: number;
+  name: string;
+  keywords: string[];
 }
 
 export interface Author {
@@ -35,4 +40,10 @@ export interface DashboardSummary {
   total_papers: number;
   total_authors: number;
   total_clusters: number;
+}
+
+export interface DomainInfo {
+  fullKey: string;
+  name: string; // ใช้เก็บชื่อ Topic แบบเต็มไปเลย
+  keywords: string[];
 }

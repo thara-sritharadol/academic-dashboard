@@ -1,12 +1,22 @@
 import { useState, useEffect, useMemo } from "react";
 import { FileText, Users, Layers } from "lucide-react";
 import api from "../services/api";
-import type { DashboardSummary } from "../types/models";
+import type { DashboardSummary, DomainInfo } from "../types/models";
 import StatCard from "../components/StatCard";
 import TrendChart from "../components/TrendChart";
 import TopicFilter from "../components/TopicFilter";
-import DistributionChart from "../components/DistributionChart";
 import TopResearchersList from "../components/TopResearchersList";
+
+interface TopicDetail {
+  name: string;
+  keywords: string[];
+}
+
+interface TopicResponse {
+  topic_id: number;
+  name: string;
+  keywords: string[];
+}
 
 export default function DashboardOverview() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
@@ -16,7 +26,7 @@ export default function DashboardOverview() {
   // State For Topic
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [topAuthors, setTopAuthors] = useState<any[]>([]);
-  const [topicMap, setTopicMap] = useState<Record<string, string>>({});
+  const [topicMap, setTopicMap] = useState<Record<number, TopicDetail>>({});
   const processedTrends = useMemo(() => {
     if (trends.length === 0) return [];
 
@@ -54,14 +64,14 @@ export default function DashboardOverview() {
         setTrends(trendsRes.data);
         setTopAuthors(topAuthorsRes.data);
 
-        const map: Record<string, string> = {};
+        const map: Record<number, TopicDetail> = {};
         if (Array.isArray(topicsRes.data)) {
-          topicsRes.data.forEach((topicStr: string) => {
-            const match = topicStr.match(/(-?\d+)\s*:\s*(.+)/);
-            if (match) {
-              const topicId = match[1];
-              const topicName = match[2].trim();
-              map[topicId] = topicName;
+          topicsRes.data.forEach((topic: TopicResponse) => {
+            if (topic && topic.topic_id !== undefined) {
+              map[topic.topic_id] = {
+                name: topic.name,
+                keywords: topic.keywords || [],
+              };
             }
           });
         }
@@ -76,56 +86,28 @@ export default function DashboardOverview() {
   }, []);
 
   // useMemo To prevent it from recalculating every time a filter is selected.
-  const domainInfo = useMemo(() => {
+  const domainInfo = useMemo<DomainInfo[]>(() => {
     if (trends.length === 0) return [];
 
     const allKeys = Array.from(
       new Set(trends.flatMap(Object.keys).filter((key) => key !== "year")),
     );
 
+    const topicNameMap = new Map<string, string[]>();
+    Object.values(topicMap).forEach((topic) => {
+      topicNameMap.set(topic.name.trim(), topic.keywords);
+    });
+
     return allKeys.map((key) => {
-      // Separate the Topic name from the name (if there are :) symbols).
-      const parts = key.split(":");
-      const shortName = parts[0].trim();
-      const name = parts.length > 1 ? parts.slice(1).join(":").trim() : "";
-      return { fullKey: key, shortName, names: name };
+      const keywords = topicNameMap.get(key.trim()) || [];
+
+      return {
+        fullKey: key,
+        name: key,
+        keywords: keywords,
+      };
     });
-  }, [trends]);
-
-  const getDynamicColor = (index: number) => {
-    const hue = (index * 137.508) % 360;
-    return `hsl(${hue}, 70%, 50%)`;
-  };
-
-  const overallTopicDistribution = useMemo(() => {
-    if (trends.length === 0 || domainInfo.length === 0) return [];
-
-    const totals: Record<string, number> = {};
-
-    // Loop by adding the numbers from every year together.
-    trends.forEach((yearData) => {
-      Object.keys(yearData).forEach((key) => {
-        if (key !== "year") {
-          totals[key] = (totals[key] || 0) + (yearData[key] as number);
-        }
-      });
-    });
-
-    // Convert the object to an array and match the colors to the line chart exactly.
-    return Object.entries(totals)
-      .map(([key, value]) => {
-        const dInfo = domainInfo.find((d) => d.fullKey === key);
-        const index = domainInfo.findIndex((d) => d.fullKey === key);
-        return {
-          name:
-            dInfo && dInfo.names ? dInfo.names : dInfo ? dInfo.shortName : key,
-          value,
-          fill: getDynamicColor(index > -1 ? index : 0), // Use the exact same color as the graph line
-        };
-      })
-      .filter((item) => item.value > 0) // Take only the valuable ones.
-      .sort((a, b) => b.value - a.value); // Sorted from highest to lowest.
-  }, [trends, domainInfo]);
+  }, [trends, topicMap]);
 
   useEffect(() => {
     if (domainInfo.length > 0 && selectedDomains.length === 0) {
@@ -192,7 +174,6 @@ export default function DashboardOverview() {
 
       {/* Bottom Section: Bar Chart & Top Authors */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <DistributionChart data={overallTopicDistribution} />
         <TopResearchersList authors={topAuthors} topicMap={topicMap} />
       </div>
     </div>

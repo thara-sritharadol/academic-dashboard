@@ -19,9 +19,9 @@ const AuthorForceGraph: React.FC<AuthorForceGraphProps> = ({
   const navigate = useNavigate();
   const fgRef = useRef<any>(null);
 
-  // Physics for Graph
   useEffect(() => {
     if (!loading && fgRef.current && graphData.nodes.length > 0) {
+      // charge and distance
       fgRef.current.d3Force("charge")?.strength(-100);
       fgRef.current.d3Force("link")?.distance(80);
     }
@@ -54,7 +54,6 @@ const AuthorForceGraph: React.FC<AuthorForceGraphProps> = ({
 
   return (
     <>
-      {/* Zoom Contoller */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 bg-white/80 p-2 rounded-lg border border-slate-200 backdrop-blur-sm shadow-sm">
         <button
           onClick={() => fgRef.current?.zoom(fgRef.current.zoom() * 1.2, 400)}
@@ -79,7 +78,6 @@ const AuthorForceGraph: React.FC<AuthorForceGraphProps> = ({
         </button>
       </div>
 
-      {/* Graph */}
       <ForceGraph2D
         ref={fgRef}
         graphData={graphData}
@@ -93,7 +91,7 @@ const AuthorForceGraph: React.FC<AuthorForceGraphProps> = ({
         }}
         nodeCanvasObject={(node: any, ctx, globalScale) => {
           const label = node.name;
-          const isTu = node.faculty && node.faculty.trim() !== "";
+          const isTu = node.institution && node.institution !== "External";
           const nodeRadius = Math.max(3, (node.val || 1) * 0.8 + 2);
 
           ctx.beginPath();
@@ -119,10 +117,14 @@ const AuthorForceGraph: React.FC<AuthorForceGraphProps> = ({
           const target = typeof link.target === "object" ? link.target : null;
           if (!source || !target) return "rgba(148, 163, 184, 0.3)";
 
-          const sourceIsTu = source.faculty && source.faculty.trim() !== "";
-          const targetIsTu = target.faculty && target.faculty.trim() !== "";
+          // Line Link
+          const sourceIsTu =
+            source.institution && source.institution !== "External";
+          const targetIsTu =
+            target.institution && target.institution !== "External";
 
           if (sourceIsTu && targetIsTu) return "rgba(195, 0, 47, 1)";
+
           return "rgba(148, 163, 184, 0.5)";
         }}
         linkWidth={(link: any) => Math.sqrt(link.weight) * 1.2}

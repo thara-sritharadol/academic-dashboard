@@ -9,38 +9,25 @@ import PaperListCard from "../components/PaperListCard";
 export default function AuthorDetail() {
   const { id } = useParams();
   const [author, setAuthor] = useState<any>(null);
-  const [topicMap, setTopicMap] = useState<Record<number, string>>({});
+  const [papers, setPapers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // Sending two API calls
-        const [authorRes, topicsRes] = await Promise.all([
+        const [authorRes, papersRes] = await Promise.all([
           api.get(`/authors/${id}/`),
-          api.get("/analytics/topics/"),
+          api.get(`/papers/?author_id=${id}`),
         ]);
 
         setAuthor(authorRes.data);
 
-        // Create a map that matches Topic ID with LLM name.
-        const map: Record<number, string> = {};
-        if (Array.isArray(topicsRes.data)) {
-          topicsRes.data.forEach((topicStr: string) => {
-            // Use Regex to capture the numbers at the beginning and the text at the end (supports both "0: AI" and "-1: Noise").
-            const match = topicStr.match(/(-?\d+)\s*:\s*(.+)/);
-            if (match) {
-              const topicId = parseInt(match[1], 10);
-              const topicName = match[2].trim();
-              map[topicId] = topicName;
-            }
-          });
+        if (papersRes.data && papersRes.data.data) {
+          setPapers(papersRes.data.data);
+        } else if (Array.isArray(papersRes.data)) {
+          setPapers(papersRes.data);
         }
-
-        // Logging
-        console.log("Topic Map Generated:", map);
-        setTopicMap(map);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -85,8 +72,8 @@ export default function AuthorDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-6">
             <TopicRadarChart
-              topicProfile={author.topic_profile}
-              topicMap={topicMap}
+              // distribution_chart
+              topicProfile={author.distribution_chart}
             />
           </div>
 
@@ -96,9 +83,10 @@ export default function AuthorDetail() {
                 <BookOpen className="text-red-600" /> Published Papers
               </h2>
 
-              {author.papers && author.papers.length > 0 ? (
+              {/* State papers */}
+              {papers.length > 0 ? (
                 <div className="space-y-4">
-                  {author.papers.map((paper: any) => (
+                  {papers.map((paper: any) => (
                     <PaperListCard key={paper.id} paper={paper} />
                   ))}
                 </div>

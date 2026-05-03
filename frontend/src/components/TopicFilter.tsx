@@ -1,9 +1,10 @@
 import React from "react";
 import { CheckSquare, Square } from "lucide-react";
 import { getDynamicColor } from "../utils/colors";
+import type { DomainInfo } from "../types/models";
 
 interface TopicFilterProps {
-  domainInfo: any[];
+  domainInfo: DomainInfo[];
   selectedDomains: string[];
   onToggle: (key: string) => void;
   onSelectAll: () => void;
@@ -41,16 +42,40 @@ const TopicFilter: React.FC<TopicFilterProps> = ({
                 {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
               </div>
               <div className="flex-1">
-                <div className="font-semibold text-sm text-slate-800 flex items-center gap-2">
+                <div className="flex items-start gap-2">
                   <span
-                    className="w-2 h-2 rounded-full"
+                    className="w-2 h-2 rounded-full mt-1.5 shrink-0 shadow-sm"
                     style={{ backgroundColor: dotColor }}
                   ></span>
-                  {domain.shortName}
+
+                  <div className="flex flex-wrap gap-1">
+                    {domain.keywords && domain.keywords.length > 0 ? (
+                      <>
+                        {domain.keywords.slice(0, 7).map((keyword, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-semibold border border-slate-200"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                        {domain.keywords.length > 4 && (
+                          <span className="px-2 py-0.5 bg-slate-50 text-slate-400 rounded-md text-xs font-semibold">
+                            +{domain.keywords.length - 4}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-sm font-semibold text-slate-800">
+                        Unknown Keywords
+                      </span>
+                    )}
+                  </div>
                 </div>
-                {domain.names && (
-                  <div className="text-xs text-slate-500 mt-1 line-clamp-2 leading-tight">
-                    {domain.names}
+
+                {domain.name && (
+                  <div className="mt-1.5 ml-4 text-xs text-slate-500 line-clamp-2 leading-relaxed">
+                    {domain.name}
                   </div>
                 )}
               </div>
