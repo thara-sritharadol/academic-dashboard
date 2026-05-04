@@ -156,10 +156,17 @@ def run_fetch_papers(author_limit=None, source_type=None):
         local_folder = f"local_data/raw-zone/{date_str}"
         os.makedirs(local_folder, exist_ok=True)
         local_raw_path = f"{local_folder}/raw_papers.json"
+        local_raw_latest_path = f"local_data/raw-zone/raw_papers_latest.json"
 
         with open(local_raw_path, "w", encoding="utf-8") as f:
             f.write(json_data)
+
         print(f"Local raw data saved to: {local_raw_path}")
+
+        with open(local_raw_latest_path, "w", encoding="utf-8") as f:
+            f.write(json_data)
+            
+        print(f"Local latest raw data saved to: {local_raw_latest_path}")
 
         # Put to S3
         if bucket_name:

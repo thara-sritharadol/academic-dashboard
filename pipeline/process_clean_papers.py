@@ -72,7 +72,8 @@ def run_clean_papers(source_type=None):
             return
             
     else: # Default is local
-        raw_file_path = f"local_data/raw-zone/{date_str}/raw_papers.json"
+        # ปรับให้อ่านไฟล์จาก latest ทันที
+        raw_file_path = "local_data/raw-zone/raw_papers_latest.json"
         print(f"Loading raw data from Local: {raw_file_path}...")
         
         if not os.path.exists(raw_file_path):
@@ -105,12 +106,18 @@ def run_clean_papers(source_type=None):
     # 4. Save to Local
     local_clean_folder = f"local_data/clean-zone/{date_str}"
     local_clean_path = f"{local_clean_folder}/cleaned_papers.json"
+    local_clean_latest_path = f"local_data/clean-zone/cleaned_papers_latest.json"
     
     os.makedirs(local_clean_folder, exist_ok=True)
     json_data = json.dumps(cleaned_papers, ensure_ascii=False, indent=2)
+
     with open(local_clean_path, "w", encoding="utf-8") as f:
         f.write(json_data)
     print(f"Local copy saved to: {local_clean_path}")
+
+    with open(local_clean_latest_path, "w", encoding="utf-8") as f:
+        f.write(json_data)
+    print(f"Local latest copy saved to: {local_clean_latest_path}")
 
     # 5. Put to S3
     if bucket_name:

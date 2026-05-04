@@ -50,9 +50,10 @@ def run_deduplicate(source_type=None):
         except Exception as e:
             print(f"Failed to read cleaned data from S3: {e}")
             return
+    
     else:
-        # สมมติฐานว่าดึงข้อมูลของวันนั้นๆ ก่อน (หรือจะปรับให้ดึงไฟล์ล่าสุดก็ได้)
-        clean_file_path = f"local_data/clean-zone/{date_str}/cleaned_papers.json"
+        # ปรับให้อ่านไฟล์จาก latest ทันที
+        clean_file_path = "local_data/clean-zone/cleaned_papers_latest.json"
         print(f"Loading cleaned data from Local: {clean_file_path}...")
         
         if not os.path.exists(clean_file_path):
@@ -123,6 +124,7 @@ def run_deduplicate(source_type=None):
     # Paths สำหรับ Local & S3 Output
     dedupe_folder = f"local_data/dedupe-zone/{date_str}"
     dedupe_file_path = f"{dedupe_folder}/deduplicated_papers.json"
+    local_dedupe_latest_path = "local_data/dedupe-zone/deduplicated_papers_latest.json"
     
     s3_dedupe_key = f"dedupe-zone/{date_str}/deduplicated_papers.json"
     s3_latest_key = "dedupe-zone/deduplicated_papers_latest.json"
@@ -130,9 +132,14 @@ def run_deduplicate(source_type=None):
     # เซฟลงเครื่อง Local
     os.makedirs(dedupe_folder, exist_ok=True)
     json_data = json.dumps(final_papers, ensure_ascii=False, indent=2)
+
     with open(dedupe_file_path, "w", encoding="utf-8") as f:
         f.write(json_data)
     print(f"Local copy saved to: {dedupe_file_path}")
+
+    with open(local_dedupe_latest_path, "w", encoding="utf-8") as f:
+        f.write(json_data)
+    print(f"Local latest copy saved to: {local_dedupe_latest_path}")
 
     # อัปโหลดขึ้น S3
     if bucket_name:

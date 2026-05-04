@@ -304,8 +304,10 @@ def run_cluster(source_type=None):
         except Exception as e:
             print(f"Failed to read data from S3: {e}")
             return
+
     else:
-        dedupe_file_path = f"local_data/dedupe-zone/{date_str}/deduplicated_papers.json"
+        # ปรับให้อ่านไฟล์จาก latest ทันที
+        dedupe_file_path = "local_data/dedupe-zone/deduplicated_papers_latest.json"
         print(f"Loading deduplicated data from Local: {dedupe_file_path}...")
         
         if not os.path.exists(dedupe_file_path):
@@ -388,12 +390,18 @@ def run_cluster(source_type=None):
     # 7. บันทึกไฟล์ผลลัพธ์ลง Local
     results_folder = f"local_data/results-zone/{date_str}"
     results_file_path = f"{results_folder}/bertopic_results.json"
+    local_results_latest_path = "local_data/results-zone/bertopic_results_latest.json"
     
     os.makedirs(results_folder, exist_ok=True)
     json_data = json.dumps(valid_papers, ensure_ascii=False, indent=2)
+
     with open(results_file_path, "w", encoding="utf-8") as f:
         f.write(json_data)
     print(f"Local results saved to: {results_file_path}")
+
+    with open(local_results_latest_path, "w", encoding="utf-8") as f:
+        f.write(json_data)
+    print(f"Local latest results saved to: {local_results_latest_path}")
 
     # 8. อัปโหลดขึ้น S3
     if bucket_name:
