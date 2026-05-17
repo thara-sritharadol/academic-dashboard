@@ -5,11 +5,7 @@ from fetch_papers import run_fetch_papers
 from process_clean_papers import run_clean_papers
 from process_deduplicate import run_deduplicate
 from run_bertopic_pipeline import run_cluster
-from load_s3_to_db_pure import load_to_db
-
-# ==========================================
-# 1. สร้าง Tasks สำหรับแต่ละขั้นตอน
-# ==========================================
+from load_to_db_pure import load_to_db
 
 @task(name="1. Sync TU Authors", retries=2, retry_delay_seconds=30)
 def task_sync_authors(faculty=None):
@@ -17,7 +13,7 @@ def task_sync_authors(faculty=None):
     logger.info(f"เริ่มดึงข้อมูลรายชื่ออาจารย์ (Faculty: {faculty if faculty else 'All'})...")
     
     # สคริปต์ของคุณใช้ event, context
-    result = run_find_researcher({"faculty": faculty}, None)
+    result = run_find_researcher(faculty)
     
     if result.get("status") == "error":
         logger.error(f"Sync Authors Failed: {result.get('message')}")
@@ -75,7 +71,6 @@ def end_to_end_pipeline(
     logger.info(f"Config: Source={source_type}, Limit={author_limit}, Faculty={specific_faculty}")
 
     try:
-        # การเรียกฟังก์ชัน Task ต่อกันใน Flow จะทำงานแบบ Sequential (รอให้เสร็จทีละสเตป) โดยอัตโนมัติ
         task_sync_authors(faculty=specific_faculty)
         
         task_fetch_papers(limit=author_limit, source=source_type)
@@ -100,7 +95,7 @@ def end_to_end_pipeline(
 if __name__ == "__main__":
     # คุณสามารถเปลี่ยนพารามิเตอร์ตรงนี้ได้ตามต้องการเวลาทดสอบรันด้วย python main_pipeline.py
     end_to_end_pipeline(
-        source_type="local",    # หรือ "s3"
+        source_type="local",
         author_limit=10,      # ใส่ตัวเลขเช่น 10 เพื่อเทสต์ระบบ
         specific_faculty="Faculty of Science and Technology"
     )

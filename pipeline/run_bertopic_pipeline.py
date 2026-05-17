@@ -144,97 +144,6 @@ class BERTopicService:
         if total_words == 0: return 0
         return len(unique_words) / total_words
 
-def tune_thresholds(papers_data_raw, topics, probs, target_level=0, score_threshold=0.3):
-    print("\n[Auto-Tune] Running Grid Search to find optimal thresholds...")
-    y_true_dominant = []
-    papers_eval_data = []
-
-    # เตรียมข้อมูล Ground Truth
-    for item in papers_data_raw:
-        true_labels_set = set()
-        top_label = None
-
-        concepts = item.get('concepts', [])
-        if isinstance(concepts, str):
-            try:
-                concepts = json.loads(concepts)
-            except:
-                concepts = []
-
-        valid_concepts = []
-        for c in concepts:
-            if c.get('level') == target_level and c.get('score', 0) >= score_threshold:
-                true_labels_set.add(c['display_name'])
-                valid_concepts.append(c)
-
-        if valid_concepts:
-            valid_concepts.sort(key=lambda x: x.get('score', 0), reverse=True)
-            top_label = valid_concepts[0]['display_name']
-
-        y_true_dominant.append(top_label)
-        papers_eval_data.append({'true_labels': list(true_labels_set)})
-
-    has_ground_truth = any(len(p['true_labels']) > 0 for p in papers_eval_data)
-    if not has_ground_truth:
-        print("No Ground Truth found in data. Using default thresholds (Abs=0.10, Rel=0.10).")
-        return 0.10, 0.10
-
-    # สร้าง Mapping คลัสเตอร์กับ Label
-    cluster_to_label_map = {}
-    unique_clusters = set(topics)
-    for cid in unique_clusters:
-        indices = [i for i, x in enumerate(topics) if x == cid]
-        if indices:
-            labels_in_cluster = [y_true_dominant[i] for i in indices if y_true_dominant[i] is not None]
-            if labels_in_cluster:
-                cluster_to_label_map[cid] = Counter(labels_in_cluster).most_common(1)[0][0]
-            else:
-                cluster_to_label_map[cid] = 'Unknown'
-        else:
-            cluster_to_label_map[cid] = 'Unknown'
-
-    # เริ่มรันหาค่าที่ดีที่สุด
-    abs_thresholds = np.round(np.arange(0.05, 0.26, 0.05), 2)
-    rel_thresholds = np.round(np.arange(0.1, 0.6, 0.1), 2)
-
-    best_f1 = 0.0
-    best_params = (0.10, 0.10)
-
-    for abs_t in abs_thresholds:
-        for rel_t in rel_thresholds:
-            f1_list = []
-            for doc_idx, paper_item in enumerate(papers_eval_data):
-                true_labels_set = set(paper_item['true_labels'])
-                if not true_labels_set: continue
-
-                pred_labels = set()
-                paper_probs = probs[doc_idx]
-                max_prob = max(paper_probs) if len(paper_probs) > 0 else 0
-
-                for t_id, prob in enumerate(paper_probs):
-                    if prob > abs_t and prob >= (max_prob * rel_t):
-                        mapped_label = cluster_to_label_map.get(t_id, 'Unknown')
-                        if mapped_label != 'Unknown':
-                            pred_labels.add(mapped_label)
-
-                hard_cluster_id = int(topics[doc_idx])
-                if not pred_labels:
-                    pred_labels.add(cluster_to_label_map.get(hard_cluster_id, 'Unknown'))
-
-                intersection = len(true_labels_set & pred_labels)
-                p = intersection / len(pred_labels) if pred_labels else 0
-                r = intersection / len(true_labels_set) if true_labels_set else 0
-                f1 = 2 * p * r / (p + r) if (p + r) > 0 else 0
-                f1_list.append(f1)
-
-            avg_f1 = np.mean(f1_list) if f1_list else 0
-            if avg_f1 > best_f1:
-                best_f1 = avg_f1
-                best_params = (abs_t, rel_t)
-
-    print(f"Optimal Thresholds Found: Abs = {best_params[0]:.2f}, Rel = {best_params[1]:.2f} (Best F1: {best_f1:.4f})")
-    return best_params[0], best_params[1]
-
 # ── 2. ฟังก์ชันเรียก Gemini ตั้งชื่อ ──
 def generate_llm_names(topic_model, api_key):
     if not api_key:
@@ -347,7 +256,8 @@ def run_cluster(source_type=None):
     print("BERTopic Training Completed!")
 
     # 5. หา Threshold และตั้งชื่อด้วย LLM
-    best_abs, best_rel = tune_thresholds(valid_papers, topics, probs)
+    best_abs = 0.05 
+    best_rel = 0.3
     llm_names = generate_llm_names(topic_model, gemini_api_key)
 
     # 6. ผสานข้อมูล Topic กลับเข้าสู่ Paper

@@ -3,6 +3,7 @@ import time
 import json
 import requests
 import boto3
+import argparse
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -82,13 +83,13 @@ class TUSyncService:
 
         return all_authors
 
-def run_find_researcher(event, context):
+def run_find_researcher(faculty):
     # Environment Variables
     api_key = os.getenv("TU_API_KEY")
     bucket_name = os.getenv("S3_BUCKET_NAME")
     
     # specific_faculty
-    specific_faculty = event.get("faculty")
+    specific_faculty = faculty
 
     if not api_key:
         return {"status": "error", "message": "Missing TU_API_KEY"}
@@ -162,4 +163,7 @@ def run_find_researcher(event, context):
 
 if __name__ == "__main__":
     # Test run
-    run_find_researcher({}, None)
+    parser = argparse.ArgumentParser(description="Find Prof. from Thammasat University")
+    parser.add_argument("--faculty", type=str, default="Faculty of Science and Technology", help="Faculty to fetch Prof.")
+    args = parser.parse_args()
+    run_find_researcher(args.faculty)

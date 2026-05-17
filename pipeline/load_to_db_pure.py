@@ -7,12 +7,13 @@ from itertools import combinations
 from datetime import datetime
 from dotenv import load_dotenv
 
-from sqlalchemy import create_engine, MetaData, Table, select
+# เพิ่ม text เข้ามาเพื่อใช้รันคำสั่ง SQL ดิบ (Raw SQL)
+from sqlalchemy import create_engine, MetaData, Table, select, text
 from sqlalchemy.dialects.postgresql import insert
 
 load_dotenv()
 
-# 1. Postgres UPSERT
+# 1. Postgres UPSERT (ยังคงไว้ใช้จัดการกรณีข้อมูลซ้ำกันเองภายในไฟล์ JSON ใหม่)
 def upsert_bulk(conn, table, data_list, conflict_cols, update_cols):
     """Bulk Upsert (Insert or Update)"""
     if not data_list: return
@@ -55,11 +56,10 @@ def fetch_data(source_type, bucket_name, region=None):
         # Load from Local
         print("Loading data from Local...")
         
-        # สมมติฐาน path สำหรับ local
         local_auth_path = "local_data/config/tu_authors_latest.json"
-        local_papers_path = "local_data/results-zone/bertopic_results_latest.json" # สมมติฐานว่ามีไฟล์นี้ หรือใช้ของวันปัจจุบัน
+        local_papers_path = "local_data/results-zone/bertopic_results_latest.json" 
 
-        # Fallback case: ถ้ายังไม่ได้ทำไฟล์ latest ใน local-results zone ก็ดึงจาก folder วันนี้แทน
+        # Fallback case
         date_str = datetime.now().strftime("%Y-%m-%d")
         fallback_papers_path = f"local_data/results-zone/{date_str}/bertopic_results.json"
 
@@ -116,12 +116,33 @@ def load_to_db(source_type=None):
     paper_authors_table = Table('api_paper_authors', metadata, autoload_with=engine)
     interaction_table = Table('api_papertopicinteraction', metadata, autoload_with=engine)
     
-    # table stata
     fac_stat_table = Table('api_facultytopicstat', metadata, autoload_with=engine)
     year_stat_table = Table('api_yearlytopicstat', metadata, autoload_with=engine)
     coauthor_table = Table('api_coauthorship', metadata, autoload_with=engine)
 
-    # PHASE 1: Upsert Core
+    # =========================================
+    # PHASE 0: WIPE OLD DATA (FULL REFRESH)
+    # =========================================
+    print("Wiping existing data from Database (TRUNCATE & RESTART IDENTITY)...")
+    with engine.begin() as conn:
+        # ใช้ TRUNCATE CASCADE เพื่อลบข้อมูลทุกตารางที่เกี่ยวข้องกัน และเริ่ม ID ใหม่
+        conn.execute(text("""
+            TRUNCATE TABLE 
+                api_facultytopicstat, 
+                api_yearlytopicstat, 
+                api_coauthorship,
+                api_papertopicinteraction, 
+                api_paper_authors, 
+                api_paper, 
+                api_author, 
+                api_topic 
+            RESTART IDENTITY CASCADE;
+        """))
+    print("Old data has been completely removed.")
+
+    # =========================================
+    # PHASE 1: Prepare & Insert Core Data
+    # =========================================
     topics_to_insert, authors_to_insert, papers_to_insert = {}, {}, []
     
     print("Preparing Core Data...")
@@ -152,8 +173,9 @@ def load_to_db(source_type=None):
                     "institution": "Thammasat University" if fac else "External", "email": None
                 }
 
-    print("Bulk Upserting Topics, Authors, Papers...")
+    print("Inserting Core Data (Topics, Authors, Papers)...")
     with engine.begin() as conn:
+        # ยังคงใช้ upsert_bulk เพื่อป้องกัน Error กรณีข้อมูลในไฟล์ JSON มีการดึงข้อมูลซ้ำกันเอง (Intra-file duplicates)
         upsert_bulk(conn, topics_table, list(topics_to_insert.values()), ['topic_id'], ['name', 'keywords'])
         upsert_bulk(conn, authors_table, list(authors_to_insert.values()), ['openalex_id'], ['name', 'faculty', 'institution'])
         upsert_bulk(conn, papers_table, papers_to_insert, ['doi'], ['title', 'year', 'abstract', 'citation_count'])
@@ -163,12 +185,10 @@ def load_to_db(source_type=None):
     # =========================================
     print("Fetching generated IDs from Database...")
     with engine.begin() as conn:
-        # ดึง ID กลับมาใช้ Mapping
         paper_id_map = {row.doi: row.id for row in conn.execute(select(papers_table.c.id, papers_table.c.doi)).fetchall()}
         author_id_map = {(row.openalex_id or row.name.lower()): row.id for row in conn.execute(select(authors_table.c.id, authors_table.c.openalex_id, authors_table.c.name)).fetchall()}
         topic_id_map = {row.topic_id: row.id for row in conn.execute(select(topics_table.c.id, topics_table.c.topic_id)).fetchall()}
 
-    # เตรียม Data สำหรับ Insert สถิติ
     paper_author_links = []
     interactions = []
     seen_links = set()
@@ -192,7 +212,7 @@ def load_to_db(source_type=None):
             "predicted_multi_labels": p.get("predicted_multi_labels", [])
         })
 
-        # 2. แมป Author เข้า Paper และเก็บข้อมูลคณะ
+        # 2. แมป Author เข้า Paper
         current_paper_author_ids = []
         involved_faculties = set()
         
@@ -201,43 +221,37 @@ def load_to_db(source_type=None):
             a_id = author_id_map.get(key)
             if a_id:
                 current_paper_author_ids.append(a_id)
-                # เก็บลิงก์ M2M
                 if (p_id, a_id) not in seen_links:
                     paper_author_links.append({"paper_id": p_id, "author_id": a_id})
                     seen_links.add((p_id, a_id))
                 
-                # หาชื่อคณะของ Author คนนี้จาก dict ที่เราเตรียมไว้
                 fac = authors_to_insert[key].get("faculty")
                 if fac: involved_faculties.add(fac)
 
         # 3. คำนวณสถิติ
         if t_db_id:
-            # 3.1 Faculty Stats
             for fac in involved_faculties:
                 fac_topic_counts[(fac, t_db_id)]["papers"] += 1
                 fac_topic_counts[(fac, t_db_id)]["citations"] += p.get("citation_count", 0)
             
-            # 3.2 Yearly Stats
             year = p.get("year")
             if year:
                 yearly_counts[(year, t_db_id)] += 1
 
         # 4. คำนวณ Network Graph (Co-authorship)
-        current_paper_author_ids.sort() # เรียงเพื่อป้องกันบั๊กคู่ (1,2) กับ (2,1)
+        current_paper_author_ids.sort() 
         for id1, id2 in combinations(current_paper_author_ids, 2):
             co_authors_dict[(id1, id2)] += 1
 
     # =========================================
-    # PHASE 3: Insert สถิติทั้งหมดลง NeonDB
+    # PHASE 3: Insert สถิติทั้งหมด
     # =========================================
     print("Saving Relationships and Statistics...")
     with engine.begin() as conn:
-        # Insert Paper-Author (M2M)
         if paper_author_links:
             stmt = insert(paper_authors_table).values(paper_author_links).on_conflict_do_nothing()
             conn.execute(stmt)
 
-        # Upsert Interactions
         if interactions:
             upsert_bulk(
                 conn,
@@ -247,13 +261,9 @@ def load_to_db(source_type=None):
                 update_cols=['primary_topic_id', 'topic_distribution', 'predicted_multi_labels']
             )
 
-        # Drop and Replace สถิติเพื่อความแม่นยำ 100%
-        conn.execute(fac_stat_table.delete())
-        conn.execute(year_stat_table.delete())
-        conn.execute(coauthor_table.delete())
-
+        # ตัดการ .delete() สถิติออกไป เพราะเราเคลียร์หมดแล้วใน Phase 0
         if fac_topic_counts:
-            current_time = datetime.now() # สร้างตัวแปรเก็บเวลาปัจจุบัน
+            current_time = datetime.now()
             fac_data = [
                 {
                     "faculty": f, 
@@ -274,7 +284,7 @@ def load_to_db(source_type=None):
             coauth_data = [{"author_a_id": a1, "author_b_id": a2, "weight": w} for (a1, a2), w in co_authors_dict.items()]
             conn.execute(insert(coauthor_table).values(coauth_data))
 
-    print("All Done! Dashboard data is perfectly optimized and ready.")
+    print("All Done! Dashboard data has been fully refreshed and is ready.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Load processed data to Database")

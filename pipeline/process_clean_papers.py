@@ -97,7 +97,7 @@ def run_clean_papers(source_type=None):
             "authors_struct": flatten_authors(paper.get("authorships", [])),
             "year": paper.get("year"),
             "venue": paper.get("venue"),
-            "concepts": paper.get("concepts", []),
+            #"concepts": paper.get("concepts", []),
             "citation_count": paper.get("citation_count", 0)
         }
         clean_paper_data["authors_text"] = ", ".join([a["name"] for a in clean_paper_data["authors_struct"]])

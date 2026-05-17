@@ -72,7 +72,7 @@ def fetch_papers_for_author(author_name: str):
                     "authorships": item.get("authorships", []),
                     "year": item.get("publication_year"),
                     "venue": item.get("venue_name"),
-                    "concepts": item.get("concepts", []),
+                    #"concepts": item.get("concepts", []),
                     "abstract_inverted_index": item.get("abstract_inverted_index"),
                     "citation_count": item.get("cited_by_count", 0)
                 })
