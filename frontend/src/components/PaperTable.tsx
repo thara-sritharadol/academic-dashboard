@@ -38,13 +38,13 @@ const PaperTable: React.FC<PaperTableProps> = ({ papers, loading }) => {
               scope="col"
               className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-2/5"
             >
-              Paper Title
+              Article Title
             </th>
             <th
               scope="col"
               className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider w-1/5"
             >
-              Authors
+              Researcher
             </th>
             <th
               scope="col"
@@ -56,7 +56,7 @@ const PaperTable: React.FC<PaperTableProps> = ({ papers, loading }) => {
               scope="col"
               className="px-6 py-4 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider"
             >
-              Discovered Domains
+              Discovered Topics
             </th>
             <th
               scope="col"

@@ -129,18 +129,18 @@ export default function DashboardOverview() {
 
   return (
     <div className="p-8">
-      <h1 className="text-3xl font-bold mb-8">System Overview</h1>
+      <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
 
       {/* Hero Stats - Refactored Version */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <StatCard
-          title="Total Papers"
+          title="Total Articles"
           value={summary?.total_papers}
           icon={<FileText size={24} />}
           variant="red"
         />
         <StatCard
-          title="Total Authors"
+          title="Total Researcher"
           value={summary?.total_authors}
           icon={<Users size={24} />}
           variant="emerald"
@@ -173,7 +173,7 @@ export default function DashboardOverview() {
       </div>
 
       {/* Bottom Section: Bar Chart & Top Authors */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6">
         <TopResearchersList authors={topAuthors} topicMap={topicMap} />
       </div>
     </div>

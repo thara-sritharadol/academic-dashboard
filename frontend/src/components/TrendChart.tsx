@@ -25,13 +25,13 @@ const TrendChart: React.FC<TrendChartProps> = ({
 }) => {
   return (
     <div className="lg:col-span-3 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-      <h2 className="text-lg font-bold mb-6">Domain Publications Over Time</h2>
+      <h2 className="text-lg font-bold mb-6">Topic Publications Over Time</h2>
       <div className="h-[450px] w-full">
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 30, left: 30, bottom: 20 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -42,8 +42,27 @@ const TrendChart: React.FC<TrendChartProps> = ({
                 dataKey="year"
                 tick={{ fill: "#64748b" }}
                 tickMargin={10}
+                label={{
+                  value: "Year",
+                  position: "insideBottom",
+                  offset: -15, // ปรับให้ต่ำลงมาไม่ทับตัวเลข
+                  fill: "#64748b",
+                  fontSize: 14,
+                }}
               />
-              <YAxis tick={{ fill: "#64748b" }} tickMargin={10} />
+              <YAxis
+                tick={{ fill: "#64748b" }}
+                tickMargin={10}
+                label={{
+                  value: "Publications",
+                  angle: -90,
+                  position: "insideLeft",
+                  style: { textAnchor: "middle" },
+                  offset: -10,
+                  fill: "#64748b",
+                  fontSize: 14,
+                }}
+              />
               <RechartsTooltip
                 contentStyle={{
                   borderRadius: "8px",

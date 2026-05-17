@@ -135,9 +135,9 @@ export default function PaperSearch() {
   return (
     <div className="p-8 h-screen flex flex-col">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Paper Repository</h1>
+        <h1 className="text-3xl font-bold mb-2">Article Repository</h1>
         <p className="text-slate-500">
-          Search and explore research papers across all discovered domains.
+          Search and explore research articles across all discovered topics.
         </p>
       </div>
 
@@ -165,7 +165,7 @@ export default function PaperSearch() {
             </div>
             <span className="truncate text-slate-700">
               {selectedDomains.length === 0
-                ? "All Domains"
+                ? "All Topics"
                 : `${selectedDomains.length} Domain(s) Selected`}
             </span>
             <ChevronDown

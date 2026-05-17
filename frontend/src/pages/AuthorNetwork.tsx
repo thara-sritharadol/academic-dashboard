@@ -90,10 +90,10 @@ export default function AuthorNetwork() {
       <div className="p-8 pb-4 shrink-0 flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Users className="text-red-600" /> TU Collaboration Network
+            <Users className="text-red-600" /> Collaboration Network
           </h1>
           <p className="text-slate-500">
-            Node size: paper count. Line thickness: collaboration frequency.
+            Node size: article count. Line thickness: collaboration frequency.
             <span className="ml-2 inline-flex items-center gap-1.5 font-medium">
               <span
                 className="w-3 h-3 rounded-full"
