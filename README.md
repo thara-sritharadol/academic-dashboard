@@ -22,6 +22,9 @@ The project adopts a modern, hybrid-cloud architecture designed for scalability 
 *   **CI/CD Pipeline:** Fully automated deployments using **GitHub Actions**, secured with Secretless **OpenID Connect (OIDC)** authentication to AWS.
 *   **Data Lake / Storage:** **Amazon S3** is utilized for backing up intermediate pipeline data, laying the groundwork for a future full-cloud pipeline migration.
 
+## Architecture Diagram
+<img width="751" height="361" alt="senior architect drawio" src="https://github.com/user-attachments/assets/b37188b6-41c6-43fb-bd7a-43cfb538ce51" />
+
 ## Data Engineering & ML Pipeline (Prefect)
 
 The offline ETL and ML pipeline is orchestrated locally using **Prefect**. Every task in the workflow passes data exclusively via **JSON** files, and results are systematically backed up to **Amazon S3** with distinct prefixes (`raw_zone`, `clean_zone`, etc.) for data lake management.
